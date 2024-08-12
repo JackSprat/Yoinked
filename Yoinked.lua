@@ -181,7 +181,10 @@ function Yoinked:OnBankFrameOpened()
         end
     end
 
-    BankTicker = C_Timer.NewTicker(1, function()
+    local yoinkSpeed = self.db.profile.yoinkSpeed
+    if not yoinkSpeed or type(yoinkSpeed) ~= "number" then yoinkSpeed = 1 end
+
+    BankTicker = C_Timer.NewTicker(yoinkSpeed, function()
 
         self:DebugPrint("extracting")
         if self.bankTickerRunning then BankTicker:Cancel() end
@@ -191,7 +194,6 @@ function Yoinked:OnBankFrameOpened()
         if not continue then BankTicker:Cancel() end
 
     end)
-
 end
 
 function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
@@ -375,6 +377,19 @@ function Yoinked:GetOptions()
                 width = "full",
                 set = function(info,val) self.db.profile.preferWarbank = val end,
                 get = function(info) return self.db.profile.preferWarbank end
+            },
+            yoinkSpeed = {
+                name = "Yoink delay",
+                desc = "Time in seconds between each Yoink",
+                type = "range",
+                width = "full",
+                min = 0.1,
+                max = 5,
+                softMin = 0.4,
+                softMax = 2,
+                bigStep = 0.1,
+                set = function(info,val) self.db.profile.yoinkSpeed = val end,
+                get = function(info) return self.db.profile.yoinkSpeed end
             },
         },
     }
