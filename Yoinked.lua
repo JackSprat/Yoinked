@@ -380,7 +380,7 @@ function Yoinked:GetOptions()
             },
             yoinkSpeed = {
                 name = "Yoink delay",
-                desc = "Time in seconds between each Yoink",
+                desc = "Time in seconds between each Yoink - WARNING: Setting this too low may cause transfers to fail, especially if you have resource intensive bag or similar addons",
                 type = "range",
                 width = "full",
                 min = 0.1,
