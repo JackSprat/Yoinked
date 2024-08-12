@@ -1,5 +1,18 @@
 local AceGUI = LibStub("AceGUI-3.0")
 
+local function CreateConfigUI()
+    local myMenu = LibStub('Sushi-3.1').Choice(UIParent)
+    local backgroundFrameClass = LibStub('Poncho-2.0'):NewClass('Frame', 'YoinkedBG')
+
+    local bgFrame = backgroundFrameClass()
+    bgFrame:SetWidth(400)
+    bgFrame:SetHeight(300)
+    bgFrame.texture = bgFrame:CreateTexture()
+    bgFrame.texture:SetAllPoints(bgFrame)
+    bgFrame.texture:SetColorTexture(0,0,0,0.5)
+    bgFrame:Show()
+end
+
 function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     local listItem = AceGUI:Create("InlineGroup")
     listItem:SetFullWidth(true)
@@ -154,7 +167,7 @@ function Yoinked:DrawRuleContainer(container)
 end
 
 function Yoinked:CreateUIFrame()
-
+    CreateConfigUI()
 --#TODO: Rewrite to use base UI
 
     --temporarily disabled base UI experimentation

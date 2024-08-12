@@ -18,5 +18,8 @@ Libs\AceEvent-3.0\AceEvent-3.0.xml
 Libs\AceGUI-3.0\AceGUI-3.0.xml
 Libs\AceConfig-3.0\AceConfig-3.0.xml
 
+Libs\Poncho-2.0\Poncho-2.0.xml
+Libs\Sushi-3.2\Sushi-3.2.xml
+
 Yoinked.lua
 YoinkedUI.lua
