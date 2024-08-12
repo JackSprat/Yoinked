@@ -181,7 +181,7 @@ function Yoinked:OnBankFrameOpened()
         end
     end
 
-    BankTicker = C_Timer.NewTicker(0.5, function()
+    BankTicker = C_Timer.NewTicker(1, function()
 
         self:DebugPrint("extracting")
         if self.bankTickerRunning then BankTicker:Cancel() end
@@ -258,13 +258,15 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
                     return "nospace"
                 end
 
-                
                 local toWithdraw = math.min(foundAmount, requestedAmount, containerSlotToCapacity)
                 self:DebugPrint("Moving id" .. itemID .. ", #".. foundAmount .. "<=" .. requestedAmount .. " from " .. containerIDFrom .. "-" .. containerSlotFrom .. " (" .. toWithdraw .. ") to " .. containerIDTo .. "-" .. containerSlotTo)
                 C_Container.SplitContainerItem(containerIDFrom, containerSlotFrom, toWithdraw)
+
                 containerCache[containerIDFrom][containerSlotFrom].itemCount = containerCache[containerIDFrom][containerSlotFrom].itemCount - toWithdraw
+
                 if containerCache[containerIDFrom][containerSlotFrom] == 0 then containerCache[containerIDFrom][containerSlotFrom].itemID = 0 end
                 C_Container.PickupContainerItem(containerIDTo, containerSlotTo)
+                containerCache[containerIDTo][containerSlotTo].itemID = itemID
                 containerCache[containerIDTo][containerSlotTo].itemCount = containerCache[containerIDTo][containerSlotTo].itemCount + toWithdraw
                 ClearCursor()
                 return "succeeded"
