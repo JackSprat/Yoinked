@@ -1,0 +1,5 @@
+## Interface: 100107
+## Title: Sushi-3.1
+## Notes: Libraries should be embedded into your addons.
+
+Sushi-3.1.xml
