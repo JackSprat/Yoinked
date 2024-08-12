@@ -253,7 +253,6 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
                 local containerIDsToFiltered = (containerIDsToSoulbound and isSoulbound) and containerIDsToSoulbound or containerIDsTo
 
                 local containerIDTo, containerSlotTo, containerSlotToCapacity = self:FindEmptyOrUnfilledSlot(itemID, containerIDsToFiltered)
-                print(containerIDTo .. "-" .. containerSlotTo)
                 self:DebugPrint("Found empty slot at " .. containerIDTo .. ", " .. containerSlotTo)
                 if not containerIDTo or not containerSlotTo or not containerSlotToCapacity then
                     return "nospace"
