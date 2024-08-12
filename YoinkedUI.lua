@@ -1,7 +1,7 @@
 local AceGUI = LibStub("AceGUI-3.0")
 
 local function CreateConfigUI()
-    local myMenu = LibStub('Sushi-3.1').Choice(UIParent)
+
     local backgroundFrameClass = LibStub('Poncho-2.0'):NewClass('Frame', 'YoinkedBG')
 
     local bgFrame = backgroundFrameClass()
