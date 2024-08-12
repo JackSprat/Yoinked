@@ -21,7 +21,7 @@ local defaults = {
         bag4 = true,
         --#TODO: Implement setting to prefer depositing warband compatible items into the warbank
         preferWarbank = true,
-
+        yoinkSpeed = 0.7,
         --#TODO: Plan whether rules should be per profile, even if global
         rules = {
 
@@ -385,9 +385,9 @@ function Yoinked:GetOptions()
                 width = "full",
                 min = 0.1,
                 max = 5,
-                softMin = 0.4,
+                softMin = 0.3,
                 softMax = 2,
-                bigStep = 0.1,
+                bigStep = 0.05,
                 set = function(info,val) self.db.profile.yoinkSpeed = val end,
                 get = function(info) return self.db.profile.yoinkSpeed end
             },
