@@ -104,6 +104,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     local itemEnabled = AceGUI:Create("CheckBox")
     itemEnabled:SetValue(valueRow.enabled)
     itemEnabled:SetWidth(90)
+    itemEnabled:SetText("")
     itemEnabled:SetCallback("OnValueChanged", function(_,_,value)
         self.db[context].rules[itemID].enabled = value
     end)
@@ -133,6 +134,7 @@ function Yoinked:DrawRuleContainer(container)
     local moduleEnabled = AceGUI:Create("CheckBox")
     moduleEnabled:SetValue(self.db[container.context].enabled)
     moduleEnabled:SetWidth(90)
+    moduleEnabled:SetText("")
     moduleEnabled:SetCallback("OnValueChanged", function(_,_,value)
         self.db[container.context].enabled = value
     end)
@@ -140,6 +142,7 @@ function Yoinked:DrawRuleContainer(container)
 
     local itemLabel = AceGUI:Create("Label")
     itemLabel:SetFullWidth(true)
+    itemLabel:SetText("")
     container:AddChild(itemLabel)
 
     local titleGroup = AceGUI:Create("SimpleGroup")
