@@ -5,7 +5,7 @@
 ## Version: 0.0.1
 ## RequiredDeps:
 ## X-Curse-Project-ID: 1082297
-## SavedVariables: YoinkDB
+## SavedVariables: YoinkedDB
 ## SavedVariablesPerCharacter:
 
 Libs\Libstub\Libstub.lua

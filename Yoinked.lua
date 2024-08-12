@@ -77,7 +77,7 @@ end
 
 function Yoinked:OnInitialize()
     --#TODO: Add minimap icon
-    self.db = LibStub("AceDB-3.0"):New("YYoinkedDB", defaults, true)
+    self.db = LibStub("AceDB-3.0"):New("YoinkedDB", defaults, true)
     AceConfig:RegisterOptionsTable("Yoinked", self:GetOptions())
     self.optionsFrame = AceConfigDialog:AddToBlizOptions("Yoinked", "Yoinked")
 
