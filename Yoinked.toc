@@ -2,7 +2,7 @@
 ## Title: Yoinked
 ## Notes: Quickly restock supplies or consumables
 ## Author: JackSprat47
-## Version: 0.1.0
+## Version: 0.1.1
 ## RequiredDeps:
 ## X-Curse-Project-ID: 1082297
 ## SavedVariables: YoinkedDB
