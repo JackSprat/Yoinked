@@ -101,6 +101,7 @@ function Yoinked:DrawRuleContainer(container, context)
 
     local addBox = AceGUI:Create("EditBox")
     addBox:SetWidth(400)
+    addBox:SetLabel("Add Item:")
     addBox:SetCallback("OnEnter", function(...)
         if CursorHasItem() then
             local infoType, itemID, _ = GetCursorInfo()
@@ -110,24 +111,25 @@ function Yoinked:DrawRuleContainer(container, context)
             end
         end
     end)
-    container:AddChild(addBox)
 
     local spacer = AceGUI:Create("Label")
     spacer:SetText("")
     spacer:SetWidth(50)
-    container:AddChild(spacer)
 
     local desc = AceGUI:Create("Label")
     desc:SetText(contextLabels[context])
     desc:SetWidth(200)
+
+    container:AddChild(addBox)
+    container:AddChild(spacer)
     container:AddChild(desc)
 
     local moduleEnabled = AceGUI:Create("CheckBox")
-    moduleEnabled:SetValue(self.db[context].enabled)
+    moduleEnabled:SetValue(self.db.char[context .. "Enabled"])
     moduleEnabled:SetWidth(90)
-    moduleEnabled:SetLabel("")
+    moduleEnabled:SetLabel("Enabled")
     moduleEnabled:SetCallback("OnValueChanged", function(_,_,value)
-        self.db[context].enabled = value
+        self.db.char[context .. "Enabled"] = value
     end)
     container:AddChild(moduleEnabled)
 

@@ -6,7 +6,6 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local defaults = {
     profile = {
         --#TODO: refactor variables to be safer and more descriptive
-        enabled = true,
         debug = false,
         bank = true,
         warbank = true,
@@ -32,7 +31,6 @@ local defaults = {
         }
     },
     global = {
-        enabled = true,
         rules = {
             [207023] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false},
             [191383] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false}
@@ -44,15 +42,16 @@ local defaults = {
         }
     },
     char = {
-        addonEnabled = true,
-        enabled = true,
+        charEnabled = true,
+        classEnabled = true,
+        globalEnabled = true,
+        profileEnabled = true,
         rules = {
 
         }
         --#TODO: Implement character bank saved data structure
     },
     class = {
-        enabled = true,
         rules = {
 
         }
@@ -61,6 +60,7 @@ local defaults = {
 
 local assembledRules = {}
 local containerCache = {}
+local bankTicker
 
 function Yoinked:DebugPrint(...)
     if self.db.profile.debug then
@@ -90,13 +90,14 @@ end
 
 function Yoinked:OnEnable()
     self:RegisterEvent("BANKFRAME_OPENED", "OnBankFrameOpened")
-
+    self:RegisterEvent("BANKFRAME_CLOSED", "OnBankFrameClosed")
 end
 
 function Yoinked:ConstructRules()
     local contexts = {"global", "class", "profile", "char"}
     for _,context in pairs(contexts) do
-        if self.db[context] and self.db[context].rules then
+
+        if self.db.char and self.db.char[context .. "Enabled"] and self.db[context] and self.db[context].rules then
             for itemID, rule in pairs(self.db[context].rules) do
                 if assembledRules[itemID] then
                     if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
@@ -187,17 +188,29 @@ function Yoinked:OnBankFrameOpened()
 
     local yoinkSpeed = self.db.profile.yoinkSpeed
     if not yoinkSpeed or type(yoinkSpeed) ~= "number" then yoinkSpeed = 1 end
+    if not bankTicker then
+        bankTicker = C_Timer.NewTicker(yoinkSpeed, function()
 
-    BankTicker = C_Timer.NewTicker(yoinkSpeed, function()
+            self:DebugPrint("extracting")
+            if self.bankTickerRunning then bankTicker:Cancel() end
+            self.bankTickerRunning = true
+            local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound)
+            self.bankTickerRunning = false
+            if not continue then bankTicker:Cancel() end
 
-        self:DebugPrint("extracting")
-        if self.bankTickerRunning then BankTicker:Cancel() end
-        self.bankTickerRunning = true
-        local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound)
-        self.bankTickerRunning = false
-        if not continue then BankTicker:Cancel() end
+        end)
+    end
+end
 
-    end)
+function Yoinked:OnBankFrameClosed()
+
+    if bankTicker then
+        bankTicker:Cancel()
+        bankTicker = nil
+    end
+
+    --TODO: update database storing of cache'd bank items
+
 end
 
 function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
@@ -266,11 +279,13 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
 
                 local toWithdraw = math.min(foundAmount, requestedAmount, containerSlotToCapacity)
                 self:DebugPrint("Moving id" .. itemID .. ", #".. foundAmount .. "<=" .. requestedAmount .. " from " .. containerIDFrom .. "-" .. containerSlotFrom .. " (" .. toWithdraw .. ") to " .. containerIDTo .. "-" .. containerSlotTo)
+                --TODO: Verify container still has cache'd item
                 C_Container.SplitContainerItem(containerIDFrom, containerSlotFrom, toWithdraw)
 
                 containerCache[containerIDFrom][containerSlotFrom].itemCount = containerCache[containerIDFrom][containerSlotFrom].itemCount - toWithdraw
 
                 if containerCache[containerIDFrom][containerSlotFrom] == 0 then containerCache[containerIDFrom][containerSlotFrom].itemID = 0 end
+                --TODO: Verify container still has open or available space
                 C_Container.PickupContainerItem(containerIDTo, containerSlotTo)
                 containerCache[containerIDTo][containerSlotTo].itemID = itemID
                 containerCache[containerIDTo][containerSlotTo].itemCount = containerCache[containerIDTo][containerSlotTo].itemCount + toWithdraw
