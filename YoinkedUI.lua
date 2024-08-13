@@ -2,15 +2,17 @@ local AceGUI = LibStub("AceGUI-3.0")
 
 local function CreateConfigUI()
 
-    local backgroundFrameClass = LibStub('Poncho-2.0'):NewClass('Frame', 'YoinkedBG')
+    local backgroundFrameClass = LibStub('Poncho-2.0')('Frame', 'YoinkedBG')
 
     local bgFrame = backgroundFrameClass()
     bgFrame:SetWidth(400)
     bgFrame:SetHeight(300)
+    bgFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     bgFrame.texture = bgFrame:CreateTexture()
     bgFrame.texture:SetAllPoints(bgFrame)
-    bgFrame.texture:SetColorTexture(0,0,0,0.5)
+    bgFrame.texture:SetColorTexture(0.1,0.1,0.1,0.5)
     bgFrame:Show()
+
 end
 
 function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
@@ -169,12 +171,6 @@ end
 function Yoinked:CreateUIFrame()
     CreateConfigUI()
 --#TODO: Rewrite to use base UI
-
-    --temporarily disabled base UI experimentation
-    --local frame = CreateBGFrame("YoinkedBG", 0, 0, 500, 500)
-    --local smallFrame = CreateSimpleFrame("YoinkedFrame1", frame, 10, 10, 480, 480)
-    --frame:Show()
-    --smallFrame:Show()
 
 
     local function DrawCharacterTab(container)
