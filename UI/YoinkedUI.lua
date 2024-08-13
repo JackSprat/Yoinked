@@ -193,14 +193,27 @@ function Yoinked:DrawRuleContainer(container, context)
     end
 
     addBox:SetCallback("OnTextChanged", function(_,_,value)
+
+        itemLabel:SetText("")
+        itemLabel:SetImage("")
+
         value = tonumber(value)
-        if value and C_Item.GetItemInfo(value) then
-            itemLabel:SetText(select(1, C_Item.GetItemInfo(value)))
-            itemLabel:SetImage(select(10, C_Item.GetItemInfo(value)))
-        elseif value and not C_Item.GetItemInfo(value) then
-            itemLabel:SetText("")
-            itemLabel:SetImage("")
+
+        if not value or value == "fail" or value == "" or not C_Item.DoesItemExistByID(value) then
+            return
         end
+
+        local item = Item:CreateFromItemID(value)
+
+        item:ContinueOnItemLoad(function()
+            if item and item:GetItemName() then
+                itemLabel:SetText(item:GetItemName())
+                itemLabel:SetImage(item:GetItemIcon())
+            else
+                itemLabel:SetText("")
+                itemLabel:SetImage("")
+            end
+        end)
     end)
 
     addBox:SetCallback("OnEnterPressed", function(_,_,text)
