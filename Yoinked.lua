@@ -22,6 +22,10 @@ local defaults = {
         --#TODO: Implement setting to prefer depositing warband compatible items into the warbank
         preferWarbank = true,
         yoinkSpeed = 0.7,
+        configX = 0,
+        configY = 0,
+        configWidth = 0,
+        configHeight = 0,
         --#TODO: Plan whether rules should be per profile, even if global
         rules = {
 

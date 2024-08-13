@@ -243,11 +243,23 @@ function Yoinked:CreateUIFrame()
     local frame = AceGUI:Create("Frame")
     frame:SetTitle("Yoinked")
     frame:SetStatusText("Yoinked Config")
-    frame:SetWidth(875)
-    frame:SetCallback("OnClose", function(widget) AceGUI:Release(widget) end)
+
+    if Yoinked.db.profile.configWidth and Yoinked.db.profile.configWidth > 0 then
+        frame:SetWidth(Yoinked.db.profile.configWidth)
+        frame:SetHeight(Yoinked.db.profile.configHeight)
+        frame:ClearAllPoints()
+        frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Yoinked.db.profile.configX, Yoinked.db.profile.configY)
+    else
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", UIParent, "CENTER")
+        frame:SetWidth(875)
+    end
+
+    frame:SetCallback("OnClose", function(widget)
+        Yoinked.db.profile.configX, Yoinked.db.profile.configY, Yoinked.db.profile.configWidth, Yoinked.db.profile.configHeight = frame.frame:GetBoundsRect()
+        AceGUI:Release(widget)
+    end)
     frame:SetLayout("Fill")
-    _G["YoinkedGUI"] = frame.frame
-    tinsert(UISpecialFrames, "YoinkedGUI")
 
     local tab =  AceGUI:Create("TabGroup")
     tab:SetLayout("Flow")
