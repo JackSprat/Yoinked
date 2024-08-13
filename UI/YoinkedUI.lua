@@ -101,6 +101,15 @@ function Yoinked:DrawRuleContainer(container, context)
 
     local addBox = AceGUI:Create("EditBox")
     addBox:SetWidth(400)
+    addBox:SetCallback("OnEnter", function(...)
+        if CursorHasItem() then
+            local infoType, itemID, _ = GetCursorInfo()
+            if infoType == "item" then
+                addBox:SetText(itemID)
+                ClearCursor()
+            end
+        end
+    end)
     container:AddChild(addBox)
 
     local spacer = AceGUI:Create("Label")
