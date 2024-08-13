@@ -90,8 +90,15 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     listItem:AddChild(deleteButton)
 end
 
-function Yoinked:DrawRuleContainer(container)
-    local context = container.context
+function Yoinked:DrawRuleContainer(container, context)
+
+    local contextLabels = {
+        ["char"] = "These rules apply to only " .. UnitName("player") .. ".",
+        ["class"] = "These rules apply to every " .. select(1, UnitClass("player")) .. ", if enabled.",
+        ["global"] = "These rules apply to every character on the account, if the character is enabled.",
+        ["profile"] = "These rules apply to every character with the " .. self.db:GetCurrentProfile() .. " profile, if enabled."
+    }
+
     local addBox = AceGUI:Create("EditBox")
     addBox:SetWidth(400)
     container:AddChild(addBox)
@@ -102,16 +109,16 @@ function Yoinked:DrawRuleContainer(container)
     container:AddChild(spacer)
 
     local desc = AceGUI:Create("Label")
-    desc:SetText(container.label)
+    desc:SetText(contextLabels[context])
     desc:SetWidth(200)
     container:AddChild(desc)
 
     local moduleEnabled = AceGUI:Create("CheckBox")
-    moduleEnabled:SetValue(self.db[container.context].enabled)
+    moduleEnabled:SetValue(self.db[context].enabled)
     moduleEnabled:SetWidth(90)
     moduleEnabled:SetLabel("")
     moduleEnabled:SetCallback("OnValueChanged", function(_,_,value)
-        self.db[container.context].enabled = value
+        self.db[context].enabled = value
     end)
     container:AddChild(moduleEnabled)
 
@@ -191,53 +198,10 @@ function Yoinked:CreateUIFrame()
     --don't execute if there's an existing frame open
     if configFrame and configFrame:IsShown() then return end
 
-    local function DrawCharacterTab(container)
-
-        container.context = "char"
-        container.label = "These rules apply to only " .. UnitName("player") .. "."
-        Yoinked:DrawRuleContainer(container)
-
-    end
-
-    local function DrawClassTab(container)
-
-        container.context = "class"
-        container.label = "These rules apply to every " .. select(1, UnitClass("player")) .. ", if enabled."
-
-        Yoinked:DrawRuleContainer(container)
-
-    end
-
-    local function DrawGlobalTab(container)
-
-        container.context = "global"
-        container.label = "These rules apply to every character on the account, if the character is enabled."
-
-        Yoinked:DrawRuleContainer(container)
-
-    end
-
-    local function DrawProfileTab(container)
-
-        container.context = "profile"
-        container.label = "These rules apply to every character with the " .. self.db:GetCurrentProfile() .. " profile, if enabled."
-
-        Yoinked:DrawRuleContainer(container)
-
-    end
-
     --#TODO: refactor to pass context with function rather than attaching to container
-    local function SelectGroup(container, _, group)
+    local function SelectGroup(container, _, context)
         container:ReleaseChildren()
-        if group == "charactertab" then
-            DrawCharacterTab(container)
-        elseif group == "classtab" then
-            DrawClassTab(container)
-        elseif group == "globaltab" then
-            DrawGlobalTab(container)
-        elseif group == "profiletab" then
-            DrawProfileTab(container)
-        end
+        self:DrawRuleContainer(container, context)
     end
 
     local frame = AceGUI:Create("Frame")
@@ -263,9 +227,9 @@ function Yoinked:CreateUIFrame()
 
     local tab =  AceGUI:Create("TabGroup")
     tab:SetLayout("Flow")
-    tab:SetTabs({{text="Character", value="charactertab"}, {text="Class", value="classtab"}, {text="Global", value="globaltab"}, {text="Profile", value="profiletab"}})
+    tab:SetTabs({{text="Character", value="char"}, {text="Class", value="class"}, {text="Global", value="global"}, {text="Profile", value="profile"}})
     tab:SetCallback("OnGroupSelected", SelectGroup)
-    tab:SelectTab("globaltab")
+    tab:SelectTab("global")
 
     frame:AddChild(tab)
 
