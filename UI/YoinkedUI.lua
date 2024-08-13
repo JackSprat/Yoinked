@@ -14,6 +14,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     itemLabel:SetWidth(itemSpacing[1][2])
     itemLabel:SetText(select(1, C_Item.GetItemInfo(itemID)))
     itemLabel:SetImage(select(10, C_Item.GetItemInfo(itemID)))
+    itemLabel.frame:Show()
     listItem:AddChild(itemLabel)
 
     local spacer = AceGUI:Create("Label")
@@ -29,6 +30,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
         value = tonumber(value)
         if value then self.db[context].rules[itemID].bagAmount = value end
     end)
+    bagAmount.frame:Show()
     listItem:AddChild(bagAmount)
 
     local spacer = AceGUI:Create("Label")
@@ -44,6 +46,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
         value = tonumber(value)
         if value then self.db[context].rules[itemID].bagCap = value end
     end)
+    bagCap.frame:Show()
     listItem:AddChild(bagCap)
 
     local spacer = AceGUI:Create("Label")
@@ -59,6 +62,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
         value = tonumber(value)
         if value and value >= 1 and value <= 10 then self.db[context].rules[itemID].priority = value end
     end)
+    priority.frame:Show()
     listItem:AddChild(priority)
 
     local spacer = AceGUI:Create("Label")
@@ -73,6 +77,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     itemEnabled:SetCallback("OnValueChanged", function(_,_,value)
         self.db[context].rules[itemID].enabled = value
     end)
+    itemEnabled.frame:Show()
     listItem:AddChild(itemEnabled)
 
     local spacer = AceGUI:Create("Label")
@@ -87,6 +92,7 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
         self.db[context].rules[itemID] = nil
         listItem:Release()
     end)
+    deleteButton.frame:Show()
     listItem:AddChild(deleteButton)
 end
 
@@ -131,11 +137,13 @@ function Yoinked:DrawRuleContainer(container, context)
     moduleEnabled:SetCallback("OnValueChanged", function(_,_,value)
         self.db.char[context .. "Enabled"] = value
     end)
+    moduleEnabled.frame:Show()
     container:AddChild(moduleEnabled)
 
     local itemLabel = AceGUI:Create("Label")
     itemLabel:SetFullWidth(true)
     itemLabel:SetText("")
+    itemLabel.frame:Show()
     container:AddChild(itemLabel)
 
     local titleGroup = AceGUI:Create("SimpleGroup")
