@@ -22,4 +22,4 @@ Libs\Poncho-2.0\Poncho-2.0.xml
 Libs\Sushi-3.2\Sushi-3.2.xml
 
 Yoinked.lua
-YoinkedUI.lua
+UI\YoinkedUI.lua

@@ -1,35 +1,28 @@
 local AceGUI = LibStub("AceGUI-3.0")
 
-local function CreateConfigUI()
-
-    local backgroundFrameClass = LibStub('Poncho-2.0')('Frame', 'YoinkedBG')
-
-    local bgFrame = backgroundFrameClass()
-    bgFrame:SetWidth(400)
-    bgFrame:SetHeight(300)
-    bgFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    bgFrame.texture = bgFrame:CreateTexture()
-    bgFrame.texture:SetAllPoints(bgFrame)
-    bgFrame.texture:SetColorTexture(0.1,0.1,0.1,0.5)
-    bgFrame:Show()
-
-end
+local itemSpacing = {{0, 350, 0}, {15, 50, 20}, {20, 50, 20}, {20, 50, 20}, {35, 20, 35}, {0, 90, 0}}
+local configFrame
 
 function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
-    local listItem = AceGUI:Create("InlineGroup")
+
+    local listItem = AceGUI:Create("SimpleGroup")
     listItem:SetFullWidth(true)
     listItem:SetLayout("Flow")
-    listItem.frame:SetPoint("TOPLEFT", 0, -50)
     scrollTable:AddChild(listItem)
 
     local itemLabel = AceGUI:Create("Label")
-    itemLabel:SetWidth(335)
+    itemLabel:SetWidth(itemSpacing[1][2])
     itemLabel:SetText(select(1, C_Item.GetItemInfo(itemID)))
     itemLabel:SetImage(select(10, C_Item.GetItemInfo(itemID)))
     listItem:AddChild(itemLabel)
 
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(itemSpacing[1][3] + itemSpacing[2][1])
+    listItem:AddChild(spacer)
+
     local bagAmount = AceGUI:Create("EditBox")
-    bagAmount:SetWidth(90)
+    bagAmount:SetWidth(itemSpacing[2][2])
     bagAmount:SetText(valueRow.bagAmount)
     bagAmount:DisableButton(true)
     bagAmount:SetCallback("OnEnterPressed", function(_,_,value)
@@ -38,8 +31,13 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     end)
     listItem:AddChild(bagAmount)
 
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(itemSpacing[2][3] + itemSpacing[3][1])
+    listItem:AddChild(spacer)
+
     local bagCap = AceGUI:Create("EditBox")
-    bagCap:SetWidth(90)
+    bagCap:SetWidth(itemSpacing[3][2])
     bagCap:SetText(valueRow.bagCap)
     bagCap:DisableButton(true)
     bagCap:SetCallback("OnEnterPressed", function(_,_,value)
@@ -48,9 +46,14 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     end)
     listItem:AddChild(bagCap)
 
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(itemSpacing[3][3] + itemSpacing[4][1])
+    listItem:AddChild(spacer)
+
     local priority = AceGUI:Create("EditBox")
     priority:SetText(valueRow.priority)
-    priority:SetWidth(90)
+    priority:SetWidth(itemSpacing[4][2])
     priority:DisableButton(true)
     priority:SetCallback("OnEnterPressed", function(_,_,value)
         value = tonumber(value)
@@ -58,18 +61,28 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     end)
     listItem:AddChild(priority)
 
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(itemSpacing[4][3] + itemSpacing[5][1])
+    listItem:AddChild(spacer)
+
     local itemEnabled = AceGUI:Create("CheckBox")
     itemEnabled:SetValue(valueRow.enabled)
-    itemEnabled:SetWidth(90)
+    itemEnabled:SetWidth(itemSpacing[5][2])
     itemEnabled:SetLabel("")
     itemEnabled:SetCallback("OnValueChanged", function(_,_,value)
         self.db[context].rules[itemID].enabled = value
     end)
     listItem:AddChild(itemEnabled)
 
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(itemSpacing[5][3] + itemSpacing[6][1])
+    listItem:AddChild(spacer)
+
     local deleteButton = AceGUI:Create("Button")
     deleteButton:SetText("Delete")
-    deleteButton:SetWidth(100)
+    deleteButton:SetWidth(itemSpacing[6][2])
     deleteButton:SetCallback("OnClick", function(_,_)
         self.db[context].rules[itemID] = nil
         listItem:Release()
@@ -82,6 +95,11 @@ function Yoinked:DrawRuleContainer(container)
     local addBox = AceGUI:Create("EditBox")
     addBox:SetWidth(400)
     container:AddChild(addBox)
+
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(50)
+    container:AddChild(spacer)
 
     local desc = AceGUI:Create("Label")
     desc:SetText(container.label)
@@ -169,9 +187,9 @@ function Yoinked:DrawRuleContainer(container)
 end
 
 function Yoinked:CreateUIFrame()
-    CreateConfigUI()
---#TODO: Rewrite to use base UI
 
+    --don't execute if there's an existing frame open
+    if configFrame and configFrame:IsShown() then return end
 
     local function DrawCharacterTab(container)
 
@@ -238,4 +256,6 @@ function Yoinked:CreateUIFrame()
     tab:SelectTab("globaltab")
 
     frame:AddChild(tab)
+
+    configFrame = frame
 end
