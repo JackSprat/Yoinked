@@ -12,8 +12,8 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
 
     local itemLabel = AceGUI:Create("Label")
     itemLabel:SetWidth(itemSpacing[1][2])
-    itemLabel:SetText(select(1, C_Item.GetItemInfo(itemID)))
-    itemLabel:SetImage(select(10, C_Item.GetItemInfo(itemID)))
+    itemLabel:SetText(select(1, C_Item.GetItemInfoInstant(itemID)))
+    itemLabel:SetImage(select(5, C_Item.GetItemInfoInstant(itemID)))
     itemLabel.frame:Show()
     itemLabel:SetCallback("OnEnter", function()
         self:DebugPrint("UI", 6, "Showing tooltip for " .. itemID)
@@ -26,6 +26,12 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
         GameTooltip:Hide()
     end)
     listItem:AddChild(itemLabel)
+
+    --Set item name after it has been cached, default to showing item ID if it can't be found
+    item:ContinueOnItemLoad(function()
+        local name = item:GetItemName()
+        itemLabel:SetText(name)
+    end)
 
     local spacer = AceGUI:Create("Label")
     spacer:SetText("")
