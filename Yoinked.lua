@@ -78,10 +78,6 @@ function Yoinked:DebugPrint(category, verbosity, ...)
 	end
 end
 
-function Yoinked:DebugLog()
-
-end
-
 function Yoinked:OnInitialize()
     --#TODO: Add minimap icon
     self.db = LibStub("AceDB-3.0"):New("YoinkedDB", defaults, true)
@@ -268,7 +264,6 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
             if (fromItemID) then self:DebugPrint("BankEvent", 8, "Checking slot " .. containerSlotFrom .. " vs " .. fromItemID) end
             if fromItemID == itemID then
 
-                self:DebugPrint ("match found")
                 local foundAmount = C_Container.GetContainerItemInfo(containerIDFrom, containerSlotFrom)["stackCount"]
                 local isSoulbound = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(containerIDFrom, containerSlotFrom))
 
