@@ -62,12 +62,15 @@ local assembledRules = {}
 local containerCache = {}
 local bankTicker
 
-function Yoinked:DebugPrint(...)
+function Yoinked:DebugPrint(category, verbosity, ...)
     if self.db.profile.debug then
 		local status, res = pcall(format, ...)
+        local prepend = ""
 		if status then
 			if DLAPI then
-                DLAPI.DebugLog("Yoinked", ...)
+                if category then prepend = category .. "~" end
+                if verbosity then prepend = prepend .. tostring(verbosity) .. "~" end
+                DLAPI.DebugLog("Yoinked", prepend .. res)
             else
                 print(res)
             end
@@ -134,27 +137,27 @@ function Yoinked:OnBankFrameOpened()
     if self.db.profile.bank then
         table.insert(containersSoulbound, BANK_CONTAINER)
         for i = 1, NUM_BANKBAGSLOTS do
-            self:DebugPrint("Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i))
+            self:DebugPrint("BankEvent", 10, "Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i))
             table.insert(containersSoulbound, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
         end
     end
 
     if self.db.profile.reagentbank then
-        self:DebugPrint("Adding bank container " .. REAGENTBANK_CONTAINER)
+        self:DebugPrint("BankEvent", 10, "Adding bank container " .. REAGENTBANK_CONTAINER)
         table.insert(containersSoulbound, REAGENTBANK_CONTAINER)
     end
 
     --initialise standard container var
     if self.db.profile.warbank then
         for i = 1, 5 do
-            self:DebugPrint("Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + NUM_BANKBAGSLOTS + i))
+            self:DebugPrint("BankEvent", 10, "Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + NUM_BANKBAGSLOTS + i))
             table.insert(containersBank, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + NUM_BANKBAGSLOTS + i)
         end
     end
     if self.db.profile.bank then
         table.insert(containersBank, BANK_CONTAINER)
         for i = 1, NUM_BANKBAGSLOTS do
-            self:DebugPrint("Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i))
+            self:DebugPrint("BankEvent", 10, "Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i))
             table.insert(containersBank, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
         end
     end
@@ -162,13 +165,13 @@ function Yoinked:OnBankFrameOpened()
     
 
     if self.db.profile.reagentbank then
-        self:DebugPrint("Adding bank container " .. REAGENTBANK_CONTAINER)
+        self:DebugPrint("BankEvent", 10, "Adding bank container " .. REAGENTBANK_CONTAINER)
         table.insert(containersBank, REAGENTBANK_CONTAINER)
     end
 
     --#TODO: Add support for reagent bags
     for i = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
-        self:DebugPrint("Adding bag container " .. i)
+        self:DebugPrint("BankEvent", 10, "Adding bag container " .. i)
         table.insert(containersBag, i)
     end
 
@@ -181,7 +184,7 @@ function Yoinked:OnBankFrameOpened()
     if (self.db.profile.debug) then
         for i, container in pairs(containerCache) do
             for j, slot in pairs(container) do
-                if slot.itemID > 0 then self:DebugPrint("container " .. i .. ", slot " .. j .. ", item, " .. slot.itemID .. ", count " .. slot.itemCount) end
+                if slot.itemID > 0 then self:DebugPrint("BankEvent", 8, "container " .. i .. ", slot " .. j .. ", item, " .. slot.itemID .. ", count " .. slot.itemCount) end
             end
         end
     end
@@ -191,7 +194,7 @@ function Yoinked:OnBankFrameOpened()
     if not bankTicker then
         bankTicker = C_Timer.NewTicker(yoinkSpeed, function()
 
-            self:DebugPrint("extracting")
+            self:DebugPrint("BankEvent", 6, "Running move tick")
             if self.bankTickerRunning then bankTicker:Cancel() end
             self.bankTickerRunning = true
             local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound)
@@ -218,14 +221,14 @@ function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound
     for itemID, rule in pairs(assembledRules) do
         if rule.enabled then
 
-            self:DebugPrint("Checking " .. itemID .. ": " .. rule.bagAmount)
+            self:DebugPrint("BankEvent", 10, "Checking " .. itemID .. ": " .. rule.bagAmount)
             local bagCount = C_Item.GetItemCount(itemID, false, false, false, false)
 
             if bagCount < rule.bagAmount then
 
                 local needed = rule.bagAmount - bagCount
                 local bagAndBankCount = C_Item.GetItemCount(itemID, self.db.profile.bank, false, self.db.profile.reagentbank, self.db.profile.warbank)
-                self:DebugPrint("Verify Bag Count (" .. bagCount .. ") < Bag + Bank Count (" .. bagAndBankCount .. "): " .. tostring(bagAndBankCount > bagCount))
+                self:DebugPrint("BankEvent", 10, "Verify Bag Count (" .. bagCount .. ") < Bag + Bank Count (" .. bagAndBankCount .. "): " .. tostring(bagAndBankCount > bagCount))
                 if bagAndBankCount > bagCount then
 
                     local success = self:TryMoveContainers(itemID, needed, containersBank, containersBag, nil)
@@ -257,12 +260,12 @@ end
 
 function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, containerIDsTo, containerIDsToSoulbound)
 
-    self:DebugPrint("Withdrawing " .. itemID .. ": " .. requestedAmount)
+    self:DebugPrint("BankEvent", 6, "Withdrawing " .. itemID .. ": " .. requestedAmount)
 
     for _, containerIDFrom in pairs(containerIDsFrom) do
         for containerSlotFrom = 1, C_Container.GetContainerNumSlots(containerIDFrom) do
             local fromItemID = C_Container.GetContainerItemID(containerIDFrom, containerSlotFrom)
-            if (fromItemID) then self:DebugPrint("checking slot " .. containerSlotFrom .. " vs " .. fromItemID) end
+            if (fromItemID) then self:DebugPrint("BankEvent", 8, "Checking slot " .. containerSlotFrom .. " vs " .. fromItemID) end
             if fromItemID == itemID then
 
                 self:DebugPrint ("match found")
@@ -272,13 +275,13 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
                 local containerIDsToFiltered = (containerIDsToSoulbound and isSoulbound) and containerIDsToSoulbound or containerIDsTo
 
                 local containerIDTo, containerSlotTo, containerSlotToCapacity = self:FindEmptyOrUnfilledSlot(itemID, containerIDsToFiltered)
-                self:DebugPrint("Found empty slot at " .. containerIDTo .. ", " .. containerSlotTo)
+                self:DebugPrint("BankEvent", 6, "Found empty slot at " .. containerIDTo .. ", " .. containerSlotTo)
                 if not containerIDTo or not containerSlotTo or not containerSlotToCapacity then
                     return "nospace"
                 end
 
                 local toWithdraw = math.min(foundAmount, requestedAmount, containerSlotToCapacity)
-                self:DebugPrint("Moving id" .. itemID .. ", #".. foundAmount .. "<=" .. requestedAmount .. " from " .. containerIDFrom .. "-" .. containerSlotFrom .. " (" .. toWithdraw .. ") to " .. containerIDTo .. "-" .. containerSlotTo)
+                self:DebugPrint("BankEvent", 4, "Moving id" .. itemID .. ", #".. foundAmount .. "<=" .. requestedAmount .. " from " .. containerIDFrom .. "-" .. containerSlotFrom .. " (" .. toWithdraw .. ") to " .. containerIDTo .. "-" .. containerSlotTo)
                 --TODO: Verify container still has cache'd item
                 C_Container.SplitContainerItem(containerIDFrom, containerSlotFrom, toWithdraw)
 
@@ -311,23 +314,23 @@ end
 
 function Yoinked:FindEmptyOrUnfilledSlot(itemToFind, containersToSearch)
     local maxStack = select(8, C_Item.GetItemInfo(itemToFind))
-    self:DebugPrint("finding empty or unfilled for " .. itemToFind)
+    self:DebugPrint("BankEvent", 6, "finding empty or unfilled for " .. itemToFind)
     for _, bagIndex in pairs(containersToSearch) do
         local bag = containerCache[bagIndex]
         for slotIndex = 1, C_Container.GetContainerNumSlots(bagIndex) do
             local itemID = bag[slotIndex].itemID
             if itemID == itemToFind then
-                self:DebugPrint("found item in bag " .. bagIndex .. ": " .. itemToFind)
+                self:DebugPrint("BankEvent", 8, "Found item in bag " .. bagIndex .. ": " .. itemToFind)
                 local countInSlot = bag[slotIndex].itemCount
                 if maxStack > countInSlot then
-                    self:DebugPrint("Itemstack has space: " .. countInSlot .. "/" .. maxStack)
+                    self:DebugPrint("BankEvent", 10, "Itemstack has space: " .. countInSlot .. "/" .. maxStack)
                     return bagIndex, slotIndex, maxStack - countInSlot
                 end
-                self:DebugPrint("Itemstack doesn't have space: " .. countInSlot .. "/" .. maxStack)
+                self:DebugPrint("BankEvent", 10, "Itemstack doesn't have space: " .. countInSlot .. "/" .. maxStack)
             end
         end
     end
-    self:DebugPrint("Finding empty for " .. itemToFind)
+    self:DebugPrint("BankEvent", 6, "Finding empty for " .. itemToFind)
     local bagIndex, slotIndex = self:FindEmptySlot(containersToSearch)
     return bagIndex, slotIndex, maxStack
 end
