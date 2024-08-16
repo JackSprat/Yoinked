@@ -1,9 +1,13 @@
 local AceGUI = LibStub("AceGUI-3.0")
 
 local itemSpacing = {{0, 350, 0}, {15, 50, 20}, {20, 50, 20}, {20, 50, 20}, {35, 20, 35}, {0, 90, 0}}
+local titleSpacing = {{0, 350, 0}, {5, 70, 10}, {20, 50, 20}, {20, 50, 20}, {20, 50, 20}, {0, 90, 0}}
 local configFrame
 
+
 function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
+
+    local item = Item:CreateFromItemID(itemID)
 
     self:DebugPrint("UI", 4, "Adding row to table for " .. itemID .. " in context " .. context)
     local listItem = AceGUI:Create("SimpleGroup")
@@ -132,6 +136,7 @@ function Yoinked:DrawRuleContainer(container, context)
         ["profile"] = "These rules apply to every character with the " .. self.db:GetCurrentProfile() .. " profile, if enabled."
     }
 
+    -- Container rule creation
     local addBox = AceGUI:Create("EditBox")
     addBox:SetWidth(400)
     addBox:SetLabel("Add Item:")
@@ -173,6 +178,8 @@ function Yoinked:DrawRuleContainer(container, context)
     itemLabel.frame:Show()
     container:AddChild(itemLabel)
 
+
+    -- Table header 
     local titleGroup = AceGUI:Create("SimpleGroup")
     titleGroup:SetFullWidth(true)
     titleGroup:SetLayout("Flow")
@@ -209,6 +216,7 @@ function Yoinked:DrawRuleContainer(container, context)
     titleItemEnabled:SetWidth(90)
     titleGroup:AddChild(titleItemEnabled)
 
+    -- Table
     local scrollcontainer = AceGUI:Create("SimpleGroup")
     scrollcontainer:SetFullWidth(true)
     scrollcontainer:SetFullHeight(true)
