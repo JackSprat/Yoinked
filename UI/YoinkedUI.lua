@@ -185,35 +185,56 @@ function Yoinked:DrawRuleContainer(container, context)
     titleGroup:SetLayout("Flow")
     container:AddChild(titleGroup)
 
-    titleItems:SetWidth(350)
     local titleItems = AceGUI:Create("InteractiveLabel")
+    titleItems:SetWidth(titleSpacing[1][2])
+    titleItems:SetHeight(20)
     titleItems:SetText("Items")
     titleGroup:AddChild(titleItems)
 
-    titleBagAmount:SetWidth(90)
     self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[1][3] + titleSpacing[2][1]))
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(titleSpacing[1][3] + titleSpacing[2][1])
+    titleGroup:AddChild(spacer)
+
     local titleBagAmount = AceGUI:Create("InteractiveLabel")
+    titleBagAmount:SetWidth(titleSpacing[2][2])
     titleBagAmount:SetText("Bag Amount")
     titleBagAmount:SetCallback("OnEnter", function() end)
     titleBagAmount:SetCallback("OnLeave", function() end)
     titleGroup:AddChild(titleBagAmount)
 
-    titleBagCap:SetWidth(90)
     self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[2][3] + titleSpacing[3][1]))
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(titleSpacing[2][3] + titleSpacing[3][1])
+    titleGroup:AddChild(spacer)
+
     local titleBagCap = AceGUI:Create("InteractiveLabel")
+    titleBagCap:SetWidth(titleSpacing[3][2])
     titleBagCap:SetText("Bag Cap")
     titleGroup:AddChild(titleBagCap)
 
     self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[3][3] + titleSpacing[4][1]))
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(titleSpacing[3][3] + titleSpacing[4][1])
+    titleGroup:AddChild(spacer)
+
     local titlePriority = AceGUI:Create("InteractiveLabel")
     titlePriority:SetText("Priority")
-    titlePriority:SetWidth(90)
+    titlePriority:SetWidth(titleSpacing[4][2])
     titleGroup:AddChild(titlePriority)
 
     self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[4][3] + titleSpacing[5][1]))
+    local spacer = AceGUI:Create("Label")
+    spacer:SetText("")
+    spacer:SetWidth(titleSpacing[4][3] + titleSpacing[5][1])
+    titleGroup:AddChild(spacer)
+
     local titleItemEnabled = AceGUI:Create("InteractiveLabel")
     titleItemEnabled:SetText("Enabled")
-    titleItemEnabled:SetWidth(90)
+    titleItemEnabled:SetWidth(titleSpacing[5][2])
     titleGroup:AddChild(titleItemEnabled)
 
     -- Table
@@ -271,7 +292,6 @@ function Yoinked:CreateUIFrame()
     --don't execute if there's an existing frame open
     if configFrame and configFrame:IsShown() then return end
 
-    --#TODO: refactor to pass context with function rather than attaching to container
     local function SelectGroup(container, _, context)
         container:ReleaseChildren()
         self:DrawRuleContainer(container, context)
