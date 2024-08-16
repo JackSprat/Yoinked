@@ -20,7 +20,6 @@ function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
     itemLabel:SetWidth(itemSpacing[1][2])
     itemLabel:SetText(select(1, C_Item.GetItemInfoInstant(itemID)))
     itemLabel:SetImage(select(5, C_Item.GetItemInfoInstant(itemID)))
-    itemLabel.frame:Show()
     itemLabel:SetCallback("OnEnter", function()
         self:DebugPrint("UI", 6, "Showing tooltip for " .. itemID)
         GameTooltip:SetOwner(itemLabel.frame, "ANCHOR_TOPLEFT", 0, 25)
@@ -130,15 +129,15 @@ end
 function Yoinked:DrawRuleContainer(container, context)
 
     local contextLabels = {
-        ["char"] = "These rules apply to only " .. UnitName("player") .. ".",
-        ["class"] = "These rules apply to every " .. select(1, UnitClass("player")) .. ", if enabled.",
-        ["global"] = "These rules apply to every character on the account, if the character is enabled.",
-        ["profile"] = "These rules apply to every character with the " .. self.db:GetCurrentProfile() .. " profile, if enabled."
+        ["char"] = UnitName("player") .. " rules:",
+        ["class"] = select(1, UnitClass("player")) .. " rules:",
+        ["global"] = "Global rules:",
+        ["profile"] = self.db:GetCurrentProfile() .. " profile rules:"
     }
 
     -- Container rule creation
     local addBox = AceGUI:Create("EditBox")
-    addBox:SetWidth(400)
+    addBox:SetWidth(100)
     addBox:SetLabel("Add Item:")
     addBox:SetCallback("OnEnter", function(...)
         if CursorHasItem() then
@@ -150,33 +149,47 @@ function Yoinked:DrawRuleContainer(container, context)
         end
     end)
 
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(50)
+    local itemLabel = AceGUI:Create("Label")
+    itemLabel:SetText("")
+    itemLabel:SetWidth(350)
 
-    local desc = AceGUI:Create("Label")
-    desc:SetText(contextLabels[context])
-    desc:SetWidth(200)
+    addBox:SetCallback("OnTextChanged", function(_,_,value)
 
-    container:AddChild(addBox)
-    container:AddChild(spacer)
-    container:AddChild(desc)
+        itemLabel:SetText("")
+        itemLabel:SetImage("")
+
+        value = tonumber(value)
+
+        if not value or value == "fail" or value == "" or not C_Item.DoesItemExistByID(value) then
+            return
+        end
+
+        local item = Item:CreateFromItemID(value)
+
+        item:ContinueOnItemLoad(function()
+            if item and item:GetItemName() then
+                itemLabel:SetText(item:GetItemName())
+                itemLabel:SetImage(item:GetItemIcon())
+            else
+                itemLabel:SetText("")
+                itemLabel:SetImage("")
+            end
+        end)
+    end)
 
     local moduleEnabled = AceGUI:Create("CheckBox")
     moduleEnabled:SetValue(self.db.char[context .. "Enabled"])
-    moduleEnabled:SetWidth(90)
-    moduleEnabled:SetLabel("Enabled")
+    moduleEnabled:SetWidth(200)
+    moduleEnabled:SetLabel(contextLabels[context] .. (self.db.char[context .. "Enabled"] and "Enabled" or "Disabled"))
     moduleEnabled:SetCallback("OnValueChanged", function(_,_,value)
         self.db.char[context .. "Enabled"] = value
+        moduleEnabled:SetLabel(contextLabels[context] .. (value and "Enabled" or "Disabled"))
     end)
     moduleEnabled.frame:Show()
-    container:AddChild(moduleEnabled)
 
-    local itemLabel = AceGUI:Create("Label")
-    itemLabel:SetFullWidth(true)
-    itemLabel:SetText("")
-    itemLabel.frame:Show()
+    container:AddChild(addBox)
     container:AddChild(itemLabel)
+    container:AddChild(moduleEnabled)
 
 
     -- Table header 
@@ -254,30 +267,6 @@ function Yoinked:DrawRuleContainer(container, context)
 
     end
 
-    addBox:SetCallback("OnTextChanged", function(_,_,value)
-
-        itemLabel:SetText("")
-        itemLabel:SetImage("")
-
-        value = tonumber(value)
-
-        if not value or value == "fail" or value == "" or not C_Item.DoesItemExistByID(value) then
-            return
-        end
-
-        local item = Item:CreateFromItemID(value)
-
-        item:ContinueOnItemLoad(function()
-            if item and item:GetItemName() then
-                itemLabel:SetText(item:GetItemName())
-                itemLabel:SetImage(item:GetItemIcon())
-            else
-                itemLabel:SetText("")
-                itemLabel:SetImage("")
-            end
-        end)
-    end)
-
     addBox:SetCallback("OnEnterPressed", function(_,_,text)
         local value = tonumber(text)
         if value and C_Item.GetItemInfo(value) then
@@ -285,6 +274,7 @@ function Yoinked:DrawRuleContainer(container, context)
             self:AddRowToTable(scroll, value, self.db[context].rules[value])
         end
     end)
+    
 end
 
 function Yoinked:CreateUIFrame()
