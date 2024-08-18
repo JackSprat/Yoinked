@@ -3,7 +3,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local itemSpacing = {{0, 350, 0}, {15, 50, 20}, {20, 50, 20}, {20, 50, 20}, {35, 20, 35}, {0, 90, 0}}
 local titleSpacing = {{0, 350, 0}, {5, 70, 10}, {20, 50, 20}, {20, 50, 20}, {20, 50, 20}, {0, 90, 0}}
 local configFrame
-
+local newConfigFrame
 
 function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
 
@@ -277,44 +277,152 @@ function Yoinked:DrawRuleContainer(container, context)
     
 end
 
-function Yoinked:CreateUIFrame()
+local function CreateBaseUIFrame()
+    newConfigFrame = CreateFrame("Frame", "YoinkedConfigUI", UIParent, "PortraitFrameTemplate")
+            local color = CreateColorFromHexString("FF1E1D20")
+            local r, g, b = color:GetRGB()
+            newConfigFrame.Bg:SetColorTexture(r, g, b, 0.8)
+            newConfigFrame.Bg.colorTexture = {r, g, b, 0.8}
+
+            local text = "Yoinked " --.. Yoinked.version
+            YoinkedConfigUITitleText:SetText(text)
+
+            tinsert(UISpecialFrames, newConfigFrame:GetName())
+            newConfigFrame:SetMovable(true)
+            newConfigFrame:EnableMouse(true)
+            newConfigFrame:SetResizable(true)
+            newConfigFrame:SetWidth(800)
+            newConfigFrame:SetHeight(500)
+            newConfigFrame:SetResizeBounds(500, 500, 1200, 1000)
+            newConfigFrame:SetFrameStrata("DIALOG")
+            newConfigFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+            YoinkedConfigUIPortrait:SetTexture([[Interface\AddOns\Yoinked\Assets\YOINKED-ICON-256s]])
+
+            newConfigFrame.TitleContainer:SetScript("OnMouseDown", function()
+                newConfigFrame:StartMoving()
+            end)
+            newConfigFrame.TitleContainer:SetScript("OnMouseUp", function()
+                newConfigFrame:StopMovingOrSizing()
+            end)
+
+            local resizeButton = CreateFrame("Button", nil, newConfigFrame)
+            resizeButton:SetSize(16, 16)
+            resizeButton:SetPoint("BOTTOMRIGHT")
+            resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+            resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+            resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+
+            resizeButton:SetScript("OnMouseDown", function(self, button)
+                newConfigFrame:StartSizing("BOTTOMRIGHT")
+            end)
+
+            resizeButton:SetScript("OnMouseUp", function(self, button)
+                newConfigFrame:StopMovingOrSizing()
+            end)
+end
+
+function Yoinked:CreateUIFrame(testMode)
+
+    if testMode then
+
+        if newConfigFrame and newConfigFrame:IsShown() then return end
+        if not newConfigFrame then
+
+            CreateBaseUIFrame()
+
+            local scrollContainer = CreateFrame("Frame", "$parentScrollContainer", newConfigFrame, "InsetFrameTemplate3")
+            scrollContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 20, -100)
+            scrollContainer:SetWidth(300)
+            scrollContainer:SetPoint("BOTTOM", newConfigFrame, "BOTTOM", 0, 20)
+
+            local searchBox = CreateFrame("EditBox", "$parentSearchBox", newConfigFrame, "InputBoxTemplate")
+            searchBox:SetPoint("BOTTOMLEFT", scrollContainer, "TOPLEFT", 6, 5)
+            searchBox:SetSize(293, 20)
+            searchBox:SetAutoFocus(false)
+            searchBox:SetScript("OnEnterPressed", function() end)
+            searchBox:SetScript("OnEscapePressed", function() end)
+
+            local ScrollBox = CreateFrame("Frame", nil, scrollContainer, "WowScrollBoxList")
+            ScrollBox:SetPoint("TOPLEFT", scrollContainer, "TOPLEFT", 3, -3)
+            ScrollBox:SetPoint("BOTTOMRIGHT", scrollContainer, "BOTTOMRIGHT", -20, 3)
+
+            local ScrollBar = CreateFrame("EventFrame", nil, newConfigFrame, "MinimalScrollBar")
+            ScrollBar:SetPoint("TOPRIGHT", scrollContainer, "TOPRIGHT", -8, -6)
+            ScrollBar:SetPoint("BOTTOMRIGHT", scrollContainer, "BOTTOMRIGHT", -8, 6)
+
+            local RuleSelectorDataProvider = CreateDataProvider()
+            local RuleSelectorScrollView = CreateScrollBoxListLinearView()
+            RuleSelectorScrollView:SetDataProvider(RuleSelectorDataProvider)
+
+            ScrollUtil.InitScrollBoxListWithScrollBar(ScrollBox, ScrollBar, RuleSelectorScrollView)
+
+            -- The 'button' argument is the frame that our data will inhabit in our list
+            -- The 'data' argument will be the data table mentioned above
+            
+
+            -- The first argument here can either be a frame type or frame template. We're just passing the "UIPanelButtonTemplate" template here
+            RuleSelectorScrollView:SetElementExtent(45)
+            RuleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate",  function (button, data)
+                local buttonText = data.buttonText
+                button:SetText(data.itemID .. "\n" .. buttonText)
+                button.Icon:SetTexture(data.textureID)
+            end)
+
+            for i = 1, 15 do
+                local myData = {
+                    itemID = 191383,
+                    textureID = 967534,
+                    buttonText = "Elemental Potion of Ultimate Power " .. i,
+                }
+
+                RuleSelectorDataProvider:Insert(myData)
+            end
+        end
+
+        newConfigFrame:Show()
+
+    else
+
+        if configFrame and configFrame:IsShown() then return end
+
+        local function SelectGroup(container, _, context)
+            container:ReleaseChildren()
+            self:DrawRuleContainer(container, context)
+        end
+
+        local frame = AceGUI:Create("Frame")
+        frame:SetTitle("Yoinked")
+        frame:SetStatusText("Yoinked Config")
+
+        if Yoinked.db.profile.configWidth and Yoinked.db.profile.configWidth > 0 then
+            frame:SetWidth(Yoinked.db.profile.configWidth)
+            frame:SetHeight(Yoinked.db.profile.configHeight)
+            frame:ClearAllPoints()
+            frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Yoinked.db.profile.configX, Yoinked.db.profile.configY)
+        else
+            frame:ClearAllPoints()
+            frame:SetPoint("CENTER", UIParent, "CENTER")
+            frame:SetWidth(875)
+        end
+
+        frame:SetCallback("OnClose", function(widget)
+            Yoinked.db.profile.configX, Yoinked.db.profile.configY, Yoinked.db.profile.configWidth, Yoinked.db.profile.configHeight = frame.frame:GetBoundsRect()
+            AceGUI:Release(widget)
+        end)
+        frame:SetLayout("Fill")
+
+        local tab =  AceGUI:Create("TabGroup")
+        tab:SetLayout("Flow")
+        tab:SetTabs({{text="Character", value="char"}, {text="Class", value="class"}, {text="Global", value="global"}, {text="Profile", value="profile"}})
+        tab:SetCallback("OnGroupSelected", SelectGroup)
+        tab:SelectTab("global")
+
+        frame:AddChild(tab)
+
+        configFrame = frame
+
+    end
 
     --don't execute if there's an existing frame open
-    if configFrame and configFrame:IsShown() then return end
-
-    local function SelectGroup(container, _, context)
-        container:ReleaseChildren()
-        self:DrawRuleContainer(container, context)
-    end
-
-    local frame = AceGUI:Create("Frame")
-    frame:SetTitle("Yoinked")
-    frame:SetStatusText("Yoinked Config")
-
-    if Yoinked.db.profile.configWidth and Yoinked.db.profile.configWidth > 0 then
-        frame:SetWidth(Yoinked.db.profile.configWidth)
-        frame:SetHeight(Yoinked.db.profile.configHeight)
-        frame:ClearAllPoints()
-        frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Yoinked.db.profile.configX, Yoinked.db.profile.configY)
-    else
-        frame:ClearAllPoints()
-        frame:SetPoint("CENTER", UIParent, "CENTER")
-        frame:SetWidth(875)
-    end
-
-    frame:SetCallback("OnClose", function(widget)
-        Yoinked.db.profile.configX, Yoinked.db.profile.configY, Yoinked.db.profile.configWidth, Yoinked.db.profile.configHeight = frame.frame:GetBoundsRect()
-        AceGUI:Release(widget)
-    end)
-    frame:SetLayout("Fill")
-
-    local tab =  AceGUI:Create("TabGroup")
-    tab:SetLayout("Flow")
-    tab:SetTabs({{text="Character", value="char"}, {text="Class", value="class"}, {text="Global", value="global"}, {text="Profile", value="profile"}})
-    tab:SetCallback("OnGroupSelected", SelectGroup)
-    tab:SelectTab("global")
-
-    frame:AddChild(tab)
-
-    configFrame = frame
+    
 end

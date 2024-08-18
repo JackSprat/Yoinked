@@ -8,6 +8,8 @@
 ## SavedVariables: YoinkedDB
 ## SavedVariablesPerCharacter:
 
+UI\YoinkedUI.xml
+
 Libs\Libstub\Libstub.lua
 Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
 
@@ -20,6 +22,7 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 
 Libs\Poncho-2.0\Poncho-2.0.xml
 Libs\Sushi-3.2\Sushi-3.2.xml
+
 
 Yoinked.lua
 UI\YoinkedUI.lua

@@ -1,0 +1,220 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+	<Frame name="YoinkedRuleScrollTemplate" virtual="true">
+		<Size x="300" y="505"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Background" atlas="Professions-background-summarylist" setAllPoints="true"/>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString parentKey="NoResultsText" inherits="GameFontNormal" text="PROFESSIONS_NO_JOURNAL_ENTRIES" hidden="true">
+					<Size x="200" y="0"/>
+					<Anchors>
+						<Anchor point="TOP" x="0" y="-60"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Frames>
+			<Frame parentKey="BackgroundNineSlice" useParentLevel="true" inherits="NineSlicePanelTemplate">
+				<KeyValues>
+					<KeyValue key="layoutType" value="InsetFrameTemplate" type="string"/>
+				</KeyValues>
+				<Anchors>
+					<Anchor point="TOPLEFT"/>
+					<Anchor point="BOTTOMRIGHT"/>
+				</Anchors>
+			</Frame>
+			
+			<EditBox parentKey="SearchBox" autoFocus="false" inherits="SearchBoxTemplate">
+				<Size y="20"/>
+				<Anchors>
+					<Anchor point="TOPRIGHT" x="-8" y="-9"/>
+					<Anchor point="TOPLEFT" x="13" y="-8"/>
+				</Anchors>
+			</EditBox>
+
+			<Frame parentKey="ScrollBox" inherits="WowScrollBoxList">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.SearchBox" relativePoint="BOTTOMLEFT" x="-5" y="-7"/>
+					<Anchor point="BOTTOMRIGHT" x="-20" y="5"/>
+				</Anchors>
+			</Frame>
+			<EventFrame parentKey="ScrollBar" inherits="MinimalScrollBar">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.ScrollBox" relativePoint="TOPRIGHT" x="0" y="0"/>
+					<Anchor point="BOTTOMLEFT" relativeKey="$parent.ScrollBox" relativePoint="BOTTOMRIGHT" x="0" y="0"/>
+				</Anchors>
+			</EventFrame>
+		</Frames>
+	</Frame>
+    <Button name="YoinkedRuleContainerButtonTemplate" virtual="true">
+        <Size x="290"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="TopLeft" name="$parentTopLeft" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="12" y="6"/>
+					<Anchors>
+						<Anchor point="TOPLEFT"/>
+					</Anchors>
+					<TexCoords left="0" right="0.09375" top="0" bottom="0.1875"/>
+				</Texture>
+				<Texture parentKey="TopRight" name="$parentTopRight" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="12" y="6"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT"/>
+					</Anchors>
+					<TexCoords left="0.53125" right="0.625" top="0" bottom="0.1875"/>
+				</Texture>
+				<Texture parentKey="BottomLeft" name="$parentBottomLeft" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="12" y="6"/>
+					<Anchors>
+						<Anchor point="BOTTOMLEFT"/>
+					</Anchors>
+					<TexCoords left="0" right="0.09375" top="0.625" bottom="0.8125"/>
+				</Texture>
+				<Texture parentKey="BottomRight" name="$parentBottomRight" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="12" y="6"/>
+					<Anchors>
+						<Anchor point="BOTTOMRIGHT"/>
+					</Anchors>
+					<TexCoords left="0.53125" right="0.625" top="0.625" bottom="0.8125"/>
+				</Texture>
+				<Texture parentKey="TopMiddle" name="$parentTopMiddle" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="56" y="6"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="TOPRIGHT"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.TopRight" relativePoint="BOTTOMLEFT"/>
+					</Anchors>
+					<TexCoords left="0.09375" right="0.53125" top="0" bottom="0.1875"/>
+				</Texture>
+				<Texture parentKey="MiddleLeft" name="$parentMiddleLeft" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="12" y="14"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT" relativeKey="$parent.TopLeft" relativePoint="BOTTOMRIGHT"/>
+						<Anchor point="BOTTOMLEFT" relativeKey="$parent.BottomLeft" relativePoint="TOPLEFT"/>
+					</Anchors>
+					<TexCoords left="0" right="0.09375" top="0.1875" bottom="0.625"/>
+				</Texture>
+				<Texture parentKey="MiddleRight" name="$parentMiddleRight" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="12" y="14"/>
+					<Anchors>
+						<Anchor point="TOPRIGHT" relativeKey="$parent.TopRight" relativePoint="BOTTOMRIGHT"/>
+						<Anchor point="BOTTOMLEFT" relativeKey="$parent.BottomRight" relativePoint="TOPLEFT"/>
+					</Anchors>
+					<TexCoords left="0.53125" right="0.625" top="0.1875" bottom="0.625"/>
+				</Texture>
+				<Texture parentKey="BottomMiddle" name="$parentBottomMiddle" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="56" y="6"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.BottomLeft" relativePoint="TOPRIGHT"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.BottomRight" relativePoint="BOTTOMLEFT"/>
+					</Anchors>
+					<TexCoords left="0.09375" right="0.53125" top="0.625" bottom="0.8125"/>
+				</Texture>
+				<Texture parentKey="MiddleMiddle" name="$parentMiddleMiddle" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+					<Size x="56" y="14"/>
+					<Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="BOTTOMRIGHT"/>
+						<Anchor point="BOTTOMRIGHT" relativeKey="$parent.BottomRight" relativePoint="TOPLEFT"/>
+					</Anchors>
+					<TexCoords left="0.09375" right="0.53125" top="0.1875" bottom="0.625"/>
+				</Texture>
+			</Layer>
+            <Layer level="OVERLAY">
+                <Texture parentKey="Icon" name="$parentIcon">
+                    <Size x="20" y="20"/>
+                    <Anchors>
+						<Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="TOPLEFT" x="5" y="-5"/>
+					</Anchors>
+                </Texture>
+            </Layer>
+		</Layers>
+		<Scripts>
+			<OnMouseDown>
+				if ( self:IsEnabled() ) then
+					self.TopLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.TopRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.BottomLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.BottomRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.TopMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.MiddleLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.MiddleRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.BottomMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					self.MiddleMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-DOWN");
+					if ( self.Icon ) then
+						if ( not self.Icon.oldPoint ) then
+							local point, relativeTo, relativePoint, x, y = self.Icon:GetPoint(1);
+							self.Icon.oldPoint = point;
+							self.Icon.oldX = x;
+							self.Icon.oldY = y;
+						end
+						self.Icon:SetPoint(self.Icon.oldPoint, self.Icon.oldX + 1, self.Icon.oldY - 1);
+					end
+				end
+			</OnMouseDown>
+			<OnMouseUp>
+				if ( self:IsEnabled() ) then
+					self.TopLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.TopRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.BottomLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.BottomRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.TopMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.MiddleLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.MiddleRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.BottomMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.MiddleMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					if ( self.Icon ) then
+						self.Icon:SetPoint(self.Icon.oldPoint, self.Icon.oldX, self.Icon.oldY);
+					end
+				end
+			</OnMouseUp>
+			<OnShow>
+				if ( self:IsEnabled() ) then
+					-- we need to reset our textures just in case we were hidden before a mouse up fired
+					self.TopLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.TopRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.BottomLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.BottomRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.TopMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.MiddleLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.MiddleRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.BottomMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+					self.MiddleMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				end
+			</OnShow>
+			<OnEnable>
+				self.TopLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.TopRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.BottomLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.BottomRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.TopMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.MiddleLeft:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.MiddleRight:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.BottomMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+				self.MiddleMiddle:SetTexture("Interface\\Addons\\Yoinked\\Assets\\YOINKED-BUTTON-DARK-UP");
+			</OnEnable>
+			<OnEnter>
+				if(self.tooltipText ~= nil) then
+					GameTooltip_AddNewbieTip(self, self.tooltipText, 1.0, 1.0, 1.0, self.newbieText);
+				end
+			</OnEnter>
+			<OnLeave>
+				if(self.tooltipText ~= nil) then
+					GameTooltip:Hide();
+				end
+			</OnLeave>
+		</Scripts>
+		<ButtonText parentKey="Text" name="$parentText">
+			<Anchors>
+				<Anchor point="CENTER" x="0" y="-1"/>
+			</Anchors>
+		</ButtonText>
+		<NormalFont style="GameFontHighlightSmall"/>
+		<HighlightFont style="GameFontHighlightSmall"/>
+		<DisabledFont style="GameFontDisableSmall"/>
+		<HighlightTexture file="Interface\Buttons\UI-Silver-Button-Highlight" alphaMode="ADD">
+			<TexCoords left="0" right="1.0" top="0.03" bottom="0.7175"/>
+		</HighlightTexture>
+    </Button>
+</Ui>

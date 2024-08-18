@@ -331,7 +331,11 @@ function Yoinked:FindEmptyOrUnfilledSlot(itemToFind, containersToSearch)
 end
 
 function Yoinked:ChatCommand(input)
-    self:CreateUIFrame()
+    if input and input == "test" then
+        self:CreateUIFrame(true)
+    else
+        self:CreateUIFrame(false)
+    end
 end
 
 function Yoinked:GetOptions()
