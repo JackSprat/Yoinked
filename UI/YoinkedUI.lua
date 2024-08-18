@@ -1,9 +1,11 @@
 local AceGUI = LibStub("AceGUI-3.0")
+local Sushi = LibStub('Sushi-3.2')
 
 local itemSpacing = {{0, 350, 0}, {15, 50, 20}, {20, 50, 20}, {20, 50, 20}, {35, 20, 35}, {0, 90, 0}}
 local titleSpacing = {{0, 350, 0}, {5, 70, 10}, {20, 50, 20}, {20, 50, 20}, {20, 50, 20}, {0, 90, 0}}
 local configFrame
 local newConfigFrame
+local contexts = {[1] = "Global", [2] = "Class", [3] = "Profile", [4] = "Char"}
 
 function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
 
@@ -279,46 +281,46 @@ end
 
 local function CreateBaseUIFrame()
     newConfigFrame = CreateFrame("Frame", "YoinkedConfigUI", UIParent, "PortraitFrameTemplate")
-            local color = CreateColorFromHexString("FF1E1D20")
-            local r, g, b = color:GetRGB()
-            newConfigFrame.Bg:SetColorTexture(r, g, b, 0.8)
-            newConfigFrame.Bg.colorTexture = {r, g, b, 0.8}
+    local color = CreateColorFromHexString("FF1E1D20")
+    local r, g, b = color:GetRGB()
+    newConfigFrame.Bg:SetColorTexture(r, g, b, 0.8)
+    newConfigFrame.Bg.colorTexture = {r, g, b, 0.8}
 
-            local text = "Yoinked " --.. Yoinked.version
-            YoinkedConfigUITitleText:SetText(text)
+    local text = "Yoinked " --.. Yoinked.version
+    YoinkedConfigUITitleText:SetText(text)
 
-            tinsert(UISpecialFrames, newConfigFrame:GetName())
-            newConfigFrame:SetMovable(true)
-            newConfigFrame:EnableMouse(true)
-            newConfigFrame:SetResizable(true)
-            newConfigFrame:SetWidth(800)
-            newConfigFrame:SetHeight(500)
-            newConfigFrame:SetResizeBounds(500, 500, 1200, 1000)
-            newConfigFrame:SetFrameStrata("DIALOG")
-            newConfigFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-            YoinkedConfigUIPortrait:SetTexture([[Interface\AddOns\Yoinked\Assets\YOINKED-ICON-256s]])
+    tinsert(UISpecialFrames, newConfigFrame:GetName())
+    newConfigFrame:SetMovable(true)
+    newConfigFrame:EnableMouse(true)
+    newConfigFrame:SetResizable(true)
+    newConfigFrame:SetWidth(800)
+    newConfigFrame:SetHeight(500)
+    newConfigFrame:SetResizeBounds(800, 500, 1600, 1000)
+    newConfigFrame:SetFrameStrata("DIALOG")
+    newConfigFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    YoinkedConfigUIPortrait:SetTexture([[Interface\AddOns\Yoinked\Assets\YOINKED-ICON-256s]])
 
-            newConfigFrame.TitleContainer:SetScript("OnMouseDown", function()
-                newConfigFrame:StartMoving()
-            end)
-            newConfigFrame.TitleContainer:SetScript("OnMouseUp", function()
-                newConfigFrame:StopMovingOrSizing()
-            end)
+    newConfigFrame.TitleContainer:SetScript("OnMouseDown", function()
+        newConfigFrame:StartMoving()
+    end)
+    newConfigFrame.TitleContainer:SetScript("OnMouseUp", function()
+        newConfigFrame:StopMovingOrSizing()
+    end)
 
-            local resizeButton = CreateFrame("Button", nil, newConfigFrame)
-            resizeButton:SetSize(16, 16)
-            resizeButton:SetPoint("BOTTOMRIGHT")
-            resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-            resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-            resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    local resizeButton = CreateFrame("Button", nil, newConfigFrame)
+    resizeButton:SetSize(16, 16)
+    resizeButton:SetPoint("BOTTOMRIGHT")
+    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
 
-            resizeButton:SetScript("OnMouseDown", function(self, button)
-                newConfigFrame:StartSizing("BOTTOMRIGHT")
-            end)
+    resizeButton:SetScript("OnMouseDown", function(self, button)
+        newConfigFrame:StartSizing("BOTTOMRIGHT")
+    end)
 
-            resizeButton:SetScript("OnMouseUp", function(self, button)
-                newConfigFrame:StopMovingOrSizing()
-            end)
+    resizeButton:SetScript("OnMouseUp", function(self, button)
+        newConfigFrame:StopMovingOrSizing()
+    end)
 end
 
 function Yoinked:CreateUIFrame(testMode)
@@ -330,42 +332,38 @@ function Yoinked:CreateUIFrame(testMode)
 
             CreateBaseUIFrame()
 
-            local scrollContainer = CreateFrame("Frame", "$parentScrollContainer", newConfigFrame, "InsetFrameTemplate3")
-            scrollContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 20, -100)
-            scrollContainer:SetWidth(300)
-            scrollContainer:SetPoint("BOTTOM", newConfigFrame, "BOTTOM", 0, 20)
+            local ruleSelectorContainer = CreateFrame("Frame", "YoinkedRuleSelectorContainer", newConfigFrame, "InsetFrameTemplate3")
+            ruleSelectorContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 20, -100)
+            ruleSelectorContainer:SetWidth(300)
+            ruleSelectorContainer:SetPoint("BOTTOM", newConfigFrame, "BOTTOM", 0, 20)
 
-            local searchBox = CreateFrame("EditBox", "$parentSearchBox", newConfigFrame, "InputBoxTemplate")
-            searchBox:SetPoint("BOTTOMLEFT", scrollContainer, "TOPLEFT", 6, 5)
-            searchBox:SetSize(293, 20)
-            searchBox:SetAutoFocus(false)
-            searchBox:SetScript("OnEnterPressed", function() end)
-            searchBox:SetScript("OnEscapePressed", function() end)
+            local ruleSelectorSearchBox = CreateFrame("EditBox", "ToinkedRuleSelectorSearchBox", newConfigFrame, "InputBoxTemplate")
+            ruleSelectorSearchBox:SetPoint("BOTTOMLEFT", ruleSelectorContainer, "TOPLEFT", 6, 5)
+            ruleSelectorSearchBox:SetSize(293, 20)
+            ruleSelectorSearchBox:SetAutoFocus(false)
+            ruleSelectorSearchBox:SetScript("OnTextChanged", function() end)
 
-            local ScrollBox = CreateFrame("Frame", nil, scrollContainer, "WowScrollBoxList")
-            ScrollBox:SetPoint("TOPLEFT", scrollContainer, "TOPLEFT", 3, -3)
-            ScrollBox:SetPoint("BOTTOMRIGHT", scrollContainer, "BOTTOMRIGHT", -20, 3)
+            local ruleSelectorScrollBox = CreateFrame("Frame", nil, ruleSelectorContainer, "WowScrollBoxList")
+            ruleSelectorScrollBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 3, -3)
+            ruleSelectorScrollBox:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -20, 3)
 
-            local ScrollBar = CreateFrame("EventFrame", nil, newConfigFrame, "MinimalScrollBar")
-            ScrollBar:SetPoint("TOPRIGHT", scrollContainer, "TOPRIGHT", -8, -6)
-            ScrollBar:SetPoint("BOTTOMRIGHT", scrollContainer, "BOTTOMRIGHT", -8, 6)
+            local ruleSelectorScrollBar = CreateFrame("EventFrame", nil, newConfigFrame, "MinimalScrollBar")
+            ruleSelectorScrollBar:SetPoint("TOPRIGHT", ruleSelectorContainer, "TOPRIGHT", -8, -6)
+            ruleSelectorScrollBar:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -8, 6)
 
-            local RuleSelectorDataProvider = CreateDataProvider()
-            local RuleSelectorScrollView = CreateScrollBoxListLinearView()
-            RuleSelectorScrollView:SetDataProvider(RuleSelectorDataProvider)
+            local ruleSelectorDataProvider = CreateDataProvider()
+            local ruleSelectorScrollView = CreateScrollBoxListLinearView()
+            ruleSelectorScrollView:SetDataProvider(ruleSelectorDataProvider)
 
-            ScrollUtil.InitScrollBoxListWithScrollBar(ScrollBox, ScrollBar, RuleSelectorScrollView)
-
-            -- The 'button' argument is the frame that our data will inhabit in our list
-            -- The 'data' argument will be the data table mentioned above
-            
+            ScrollUtil.InitScrollBoxListWithScrollBar(ruleSelectorScrollBox, ruleSelectorScrollBar, ruleSelectorScrollView)
 
             -- The first argument here can either be a frame type or frame template. We're just passing the "UIPanelButtonTemplate" template here
-            RuleSelectorScrollView:SetElementExtent(45)
-            RuleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate",  function (button, data)
+            ruleSelectorScrollView:SetElementExtent(45)
+            ruleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate",  function (button, data)
                 local buttonText = data.buttonText
                 button:SetText(data.itemID .. "\n" .. buttonText)
-                button.Icon:SetTexture(data.textureID)
+                button.ItemIcon:SetTexture(data.textureID)
+                button.ItemIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end)
 
             for i = 1, 15 do
@@ -375,8 +373,147 @@ function Yoinked:CreateUIFrame(testMode)
                     buttonText = "Elemental Potion of Ultimate Power " .. i,
                 }
 
-                RuleSelectorDataProvider:Insert(myData)
+                ruleSelectorDataProvider:Insert(myData)
             end
+
+            local ruleDisplayContainer = CreateFrame("Frame", "YoinkedRuleDisplayContainer", newConfigFrame, "InsetFrameTemplate3")
+            ruleDisplayContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 350, -100)
+            ruleDisplayContainer:SetPoint("BOTTOMRIGHT", newConfigFrame, "BOTTOMRIGHT", -20, 20)
+
+            
+            local function createDisplayContainer(contextID)
+
+                local itemID = 191383
+
+                local headerString = "Yoinked" .. contexts[contextID] .. "DisplayContainer"
+
+                local containerHeight = ruleDisplayContainer:GetHeight()-6
+                local step = containerHeight/4
+
+                local displayContainer = CreateFrame("Frame", headerString, ruleDisplayContainer, "YoinkedRuleDisplayTemplate")
+                displayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(contextID-1)*step - 3)
+                displayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -contextID*step - 3)
+
+                local title = Sushi.Header(displayContainer, contexts[contextID])
+                title:SetWidth(200)
+                title:SetUnderlined(true)
+                title:SetPoint('TOPLEFT', displayContainer, 'TOPLEFT', 10, -8)
+
+                local enabled = Sushi.Check(displayContainer, 'Enabled')
+                enabled:SetPoint('TOPRIGHT', displayContainer, 'TOPRIGHT', -2, -2)
+                enabled:SetText("Enabled")
+                enabled:SetWidth(90)
+                enabled:SetCall('OnClick', function(check, mouseButton, checked)
+                    if checked then
+                        enabled:SetText("Enabled")
+                        enabled:SetWidth(90)
+                    else
+                        enabled:SetText("Disabled")
+                        enabled:SetWidth(90)
+                    end
+                end)
+
+                local boxCap = Sushi.BoxEdit(displayContainer)
+                boxCap:SetWidth(120)
+                boxCap:SetPoint('TOPLEFT', displayContainer, 'TOPLEFT', 143, -60)
+                boxCap:SetText("test")
+
+                local frame = CreateFrame("Frame", nil, displayContainer)
+                frame:SetPoint("BOTTOMRIGHT", boxCap, "TOPRIGHT", -2, 0)
+                frame.tex = frame:CreateTexture()
+                frame.tex:SetAllPoints(frame)
+                frame.tex:SetTexture(413587)
+                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                frame:SetSize(20, 20)
+
+                local f = CreateFrame("Frame", nil, displayContainer)
+                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
+                f:SetSize(32, 32)
+                f.tex = f:CreateTexture()
+                f.tex:SetAllPoints(f)
+                f.tex:SetTexture("interface/spellbook/rotationiconframe")
+
+                local arrowFrame = CreateFrame("Frame", nil, frame)
+                arrowFrame:SetPoint("RIGHT", frame, "LEFT", 5, 0)
+                arrowFrame.tex = arrowFrame:CreateTexture()
+                arrowFrame.tex:SetAllPoints(arrowFrame)
+                arrowFrame.tex:SetTexture("interface/moneyframe/arrow-right-disabled")
+                arrowFrame:SetSize(16, 16)
+
+                local frame = CreateFrame("Frame", nil, displayContainer)
+                frame:SetPoint("RIGHT", arrowFrame, "LEFT", -3, 0)
+                frame.tex = frame:CreateTexture()
+                frame.tex:SetAllPoints(frame)
+                frame.tex:SetTexture(133633)
+                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                frame:SetSize(20, 20)
+
+                local f = CreateFrame("Frame", nil, displayContainer)
+                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
+                f:SetSize(32, 32)
+                f.tex = f:CreateTexture()
+                f.tex:SetAllPoints(f)
+                f.tex:SetTexture("interface/spellbook/rotationiconframe")
+
+                local boxYoink = Sushi.BoxEdit(displayContainer)
+                boxYoink:SetWidth(120)
+                boxYoink:SetPoint('TOPLEFT', displayContainer, 'TOPLEFT', 13, -60)
+                boxYoink:SetText("test")
+
+                local frame = CreateFrame("Frame", nil, displayContainer)
+                frame:SetPoint("BOTTOMLEFT", boxYoink, "TOPLEFT", -2, 0)
+                frame.tex = frame:CreateTexture()
+                frame.tex:SetAllPoints(frame)
+                frame.tex:SetTexture(413587)
+                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                frame:SetSize(20, 20)
+
+                local f = CreateFrame("Frame", nil, displayContainer)
+                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
+                f:SetSize(32, 32)
+                f.tex = f:CreateTexture()
+                f.tex:SetAllPoints(f)
+                f.tex:SetTexture("interface/spellbook/rotationiconframe")
+
+                local arrowFrame = CreateFrame("Frame", nil, frame)
+                arrowFrame:SetPoint("LEFT", frame, "RIGHT", 3, 0)
+                arrowFrame.tex = arrowFrame:CreateTexture()
+                arrowFrame.tex:SetAllPoints(arrowFrame)
+                arrowFrame.tex:SetTexture("interface/moneyframe/arrow-right-disabled")
+                arrowFrame:SetSize(16, 16)
+
+                local frame = CreateFrame("Frame", nil, displayContainer)
+                frame:SetPoint("LEFT", arrowFrame, "RIGHT", -5, 0)
+                frame.tex = frame:CreateTexture()
+                frame.tex:SetAllPoints(frame)
+                frame.tex:SetTexture(133633)
+                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                frame:SetSize(20, 20)
+
+                local f = CreateFrame("Frame", nil, displayContainer)
+                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
+                f:SetSize(32, 32)
+                f.tex = f:CreateTexture()
+                f.tex:SetAllPoints(f)
+                f.tex:SetTexture("interface/spellbook/rotationiconframe")
+
+            end
+
+            for contextID = 1, 4 do
+                createDisplayContainer(contextID)
+            end
+
+            newConfigFrame:SetScript("OnSizeChanged", function(frame)
+                print("size changed")
+                YoinkedGlobalDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()/4)
+                YoinkedClassDisplayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -ruleDisplayContainer:GetHeight()/4)
+                YoinkedClassDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()/2)
+                YoinkedCharDisplayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -ruleDisplayContainer:GetHeight()/2)
+                YoinkedCharDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()*(3/4))
+                YoinkedProfileDisplayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -ruleDisplayContainer:GetHeight()*(3/4))
+                YoinkedProfileDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()+3)
+            end)
+            
         end
 
         newConfigFrame:Show()

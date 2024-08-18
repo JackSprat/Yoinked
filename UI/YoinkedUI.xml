@@ -120,12 +120,18 @@
 					</Anchors>
 					<TexCoords left="0.09375" right="0.53125" top="0.1875" bottom="0.625"/>
 				</Texture>
-			</Layer>
-            <Layer level="OVERLAY">
-                <Texture parentKey="Icon" name="$parentIcon">
-                    <Size x="20" y="20"/>
+                <Texture parentKey="ItemIcon" name="$parentItemIcon">
+                    <Size x="30" y="30"/>
                     <Anchors>
-						<Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="TOPLEFT" x="5" y="-5"/>
+						<Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="TOPLEFT" x="7" y="-7"/>
+					</Anchors>
+                </Texture>
+			</Layer>
+            <Layer level="BORDER">
+                <Texture name="$parentOverlayIcon" file="interface\spellbook\rotationiconframe">
+                    <Size x="48" y="48"/>
+                    <Anchors>
+						<Anchor point="CENTER" relativeKey="$parent.ItemIcon" relativePoint="CENTER"/>
 					</Anchors>
                 </Texture>
             </Layer>
@@ -217,4 +223,78 @@
 			<TexCoords left="0" right="1.0" top="0.03" bottom="0.7175"/>
 		</HighlightTexture>
     </Button>
+    <Frame name="YoinkedRuleDisplayTemplate" virtual="true">
+        <Layers>
+            <Layer level="BACKGROUND">
+                <Texture parentKey="TopLeft" name="$parentTopLeft" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="12" y="6"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0" right="0.09375" top="0" bottom="0.1875"/>
+                </Texture>
+                <Texture parentKey="TopRight" name="$parentTopRight" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="12" y="6"/>
+                    <Anchors>
+                        <Anchor point="TOPRIGHT"/>
+                    </Anchors>
+                    <TexCoords left="0.53125" right="0.625" top="0" bottom="0.1875"/>
+                </Texture>
+                <Texture parentKey="BottomLeft" name="$parentBottomLeft" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="12" y="6"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0" right="0.09375" top="0.625" bottom="0.8125"/>
+                </Texture>
+                <Texture parentKey="BottomRight" name="$parentBottomRight" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="12" y="6"/>
+                    <Anchors>
+                        <Anchor point="BOTTOMRIGHT"/>
+                    </Anchors>
+                    <TexCoords left="0.53125" right="0.625" top="0.625" bottom="0.8125"/>
+                </Texture>
+                <Texture parentKey="TopMiddle" name="$parentTopMiddle" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="56" y="6"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="TOPRIGHT"/>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.TopRight" relativePoint="BOTTOMLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0.09375" right="0.53125" top="0" bottom="0.1875"/>
+                </Texture>
+                <Texture parentKey="MiddleLeft" name="$parentMiddleLeft" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="12" y="14"/>
+                    <Anchors>
+                        <Anchor point="TOPRIGHT" relativeKey="$parent.TopLeft" relativePoint="BOTTOMRIGHT"/>
+                        <Anchor point="BOTTOMLEFT" relativeKey="$parent.BottomLeft" relativePoint="TOPLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0" right="0.09375" top="0.1875" bottom="0.625"/>
+                </Texture>
+                <Texture parentKey="MiddleRight" name="$parentMiddleRight" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="12" y="14"/>
+                    <Anchors>
+                        <Anchor point="TOPRIGHT" relativeKey="$parent.TopRight" relativePoint="BOTTOMRIGHT"/>
+                        <Anchor point="BOTTOMLEFT" relativeKey="$parent.BottomRight" relativePoint="TOPLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0.53125" right="0.625" top="0.1875" bottom="0.625"/>
+                </Texture>
+                <Texture parentKey="BottomMiddle" name="$parentBottomMiddle" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="56" y="6"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.BottomLeft" relativePoint="TOPRIGHT"/>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.BottomRight" relativePoint="BOTTOMLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0.09375" right="0.53125" top="0.625" bottom="0.8125"/>
+                </Texture>
+                <Texture parentKey="MiddleMiddle" name="$parentMiddleMiddle" file="Interface\Addons\Yoinked\Assets\YOINKED-BUTTON-DARK-UP">
+                    <Size x="56" y="14"/>
+                    <Anchors>
+                        <Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="BOTTOMRIGHT"/>
+                        <Anchor point="BOTTOMRIGHT" relativeKey="$parent.BottomRight" relativePoint="TOPLEFT"/>
+                    </Anchors>
+                    <TexCoords left="0.09375" right="0.53125" top="0.1875" bottom="0.625"/>
+                </Texture>
+            </Layer>
+        </Layers>
+    </Frame>
 </Ui>
