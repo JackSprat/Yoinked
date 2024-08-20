@@ -1,113 +1,59 @@
----@class Yoink: AceAddon,AceConsole-3.0,AceEvent-3.0
+---@class Yoinked: AceAddon,AceConsole-3.0,AceEvent-3.0
+
+---@alias Context
+---|"global"
+---|"class"
+---|"profile"
+---|"char"
+
+---@alias Rule
+---|{bagAmount: number, bagCap: number, priority: number, enabled: boolean, amountEnabled: boolean, capEnabled: boolean}
+
+---@type table<Context, table<number, string>>
+YOINKED_CONTEXTS = {
+    global = {
+        id=1,
+        displayString="Global",
+        descriptionString = "",
+        tooltipString="These rules will be applied to every character on your account",
+        contextString="across your account."
+    },
+    class = {
+        id=2,
+        displayString="Class",
+        descriptionString = WrapTextInColorCode(select(1, UnitClass("player")), C_ClassColor.GetClassColor(select(2, UnitClass("player"))):GenerateHexColor()),
+        tooltipString="These rules will be applied to every " .. select(1, UnitClass("player")) .. " on your account",
+        contextString="on every " .. select(1, UnitClass("player")) .. "."
+    },
+    profile = {
+        id=3,
+        displayString="Profile",
+        descriptionString = "",
+        tooltipString="",
+        contextString=""
+    },
+    char = {
+        id=4,
+        displayString="Character",
+        descriptionString = UnitName("player"),
+        tooltipString="These rules will only be applied to " .. UnitName("player"),
+        contextString="on " .. UnitName("player") .. "."
+    }
+}
+
+
 Yoinked = LibStub("AceAddon-3.0"):NewAddon("Yoinked", "AceEvent-3.0", "AceConsole-3.0")
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
-local defaults = {
-    profile = {
-        --#TODO: refactor variables to be safer and more descriptive
-        debug = false,
-        bank = true,
-        warbank = true,
-        reagentbank = true,
-        reagentbag = false,
-        guildbank = false,
-        --#TODO: Implement settings to ignore banks
-        backpack = true,
-        bag1 = true,
-        bag2 = true,
-        bag3 = true,
-        bag4 = true,
-        --#TODO: Implement setting to prefer depositing warband compatible items into the warbank
-        preferWarbank = true,
-        yoinkSpeed = 0.7,
-        configX = 0,
-        configY = 0,
-        configWidth = 0,
-        configHeight = 0,
-        --#TODO: Plan whether rules should be per profile, even if global
-        rules = {
-
-        }
-    },
-    global = {
-        rules = {
-            [207023] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false},
-            [191383] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false}
-        },
-        --#TODO: Implement warbank saved data structure
-        --#TODO: Implement guild bank saved data structure
-        warbankSaved = {
-            
-        }
-    },
-    char = {
-        charEnabled = true,
-        classEnabled = true,
-        globalEnabled = true,
-        profileEnabled = true,
-        rules = {
-
-        }
-        --#TODO: Implement character bank saved data structure
-    },
-    class = {
-        rules = {
-
-        }
-    }
-}
-
-local assembledRules = {}
-local containerCache = {}
 local bankTicker
+---@type table<number, Rule>
+local yoinkedAssembledRules
 
-function Yoinked:DebugPrint(category, verbosity, ...)
-    if self.db.profile.debug then
-		local status, res = pcall(format, ...)
-        local prepend = ""
-		if status then
-			if DLAPI then
-                if category then prepend = category .. "~" end
-                if verbosity then prepend = prepend .. tostring(verbosity) .. "~" end
-                DLAPI.DebugLog("Yoinked", prepend .. res)
-            else
-                print(res)
-            end
-		end
-	end
-end
+---@type table<number, table<number, {itemID: number, itemCount: number}>>
+local containerCache = {}
 
-function Yoinked:OnInitialize()
-    --#TODO: Add minimap icon
-    self.db = LibStub("AceDB-3.0"):New("YoinkedDB", defaults, true)
-    AceConfig:RegisterOptionsTable("Yoinked", self:GetOptions())
-    self.optionsFrame = AceConfigDialog:AddToBlizOptions("Yoinked", "Yoinked")
-
-    self:RegisterChatCommand("Yoinked", "ChatCommand")
-end
-
-function Yoinked:OnEnable()
-    self:RegisterEvent("BANKFRAME_OPENED", "OnBankFrameOpened")
-    self:RegisterEvent("BANKFRAME_CLOSED", "OnBankFrameClosed")
-end
-
-function Yoinked:ConstructRules()
-    local contexts = {"global", "class", "profile", "char"}
-    for _,context in pairs(contexts) do
-
-        if self.db.char and self.db.char[context .. "Enabled"] and self.db[context] and self.db[context].rules then
-            for itemID, rule in pairs(self.db[context].rules) do
-                if assembledRules[itemID] then
-                    if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
-                else
-                    assembledRules[itemID] = rule
-                end
-            end
-        end
-    end
-end
-
+---@param containers table<number, number>
 function Yoinked:UpdateCacheItems(containers)
 
     for _, containerID in pairs(containers) do
@@ -124,45 +70,75 @@ function Yoinked:UpdateCacheItems(containers)
 
 end
 
+function Yoinked:DebugPrint(category, verbosity, ...)
+    if Yoinked:GetConfigDebugEnabled() then
+		local status, res = pcall(format, ...)
+        local prepend = ""
+		if status then
+			if DLAPI then
+                if category then prepend = category .. "~" end
+                if verbosity then prepend = prepend .. tostring(verbosity) .. "~" end
+                DLAPI.DebugLog("Yoinked", prepend .. res)
+            else
+                print(res)
+            end
+		end
+	end
+end
+
+function Yoinked:OnInitialize()
+    --#TODO: Add minimap icon
+    Yoinked:InitialiseDatabase()
+    AceConfig:RegisterOptionsTable("Yoinked", self:GetOptions())
+    self.optionsFrame = AceConfigDialog:AddToBlizOptions("Yoinked", "Yoinked")
+
+    self:RegisterChatCommand("Yoinked", "ChatCommand")
+    self:ConstructRules()
+
+    YOINKED_CONTEXTS.profile.tooltipString = "These rules will be applied to every character with the " .. Yoinked:GetConfigProfileName() .. " profile"
+    YOINKED_CONTEXTS.profile.contextString = "when the " .. Yoinked:GetConfigProfileName() .. " profile is active."
+    YOINKED_CONTEXTS.profile.descriptionString = Yoinked:GetConfigProfileName()
+end
+
+function Yoinked:OnEnable()
+    self:RegisterEvent("BANKFRAME_OPENED", "OnBankFrameOpened")
+    self:RegisterEvent("BANKFRAME_CLOSED", "OnBankFrameClosed")
+    Yoinked:RegisterEvent("CURSOR_CHANGED", "OnCursorChanged")
+end
+
+function Yoinked:ConstructRules()
+    yoinkedAssembledRules = Yoinked:ConstructRuleset()
+end
+
 function Yoinked:OnBankFrameOpened()
 
     local containersBank = {}
     local containersBag = {}
     local containersSoulbound = {}
     --initialise enabled soulbound only containers for use as soulbound item
-    if self.db.profile.bank then
+    if Yoinked:GetConfigBankEnabled() then
         table.insert(containersSoulbound, BANK_CONTAINER)
+        table.insert(containersBank, BANK_CONTAINER)
         for i = 1, NUM_BANKBAGSLOTS do
             self:DebugPrint("BankEvent", 10, "Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i))
             table.insert(containersSoulbound, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
+            table.insert(containersBank, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
         end
+        
     end
 
-    if self.db.profile.reagentbank then
-        self:DebugPrint("BankEvent", 10, "Adding bank container " .. REAGENTBANK_CONTAINER)
+    if Yoinked:GetConfigReagentBankEnabled() then
+        self:DebugPrint("BankEvent", 10, "Adding bank containers " .. REAGENTBANK_CONTAINER)
         table.insert(containersSoulbound, REAGENTBANK_CONTAINER)
+        table.insert(containersBank, REAGENTBANK_CONTAINER)
     end
 
     --initialise standard container var
-    if self.db.profile.warbank then
+    if Yoinked:GetConfigWarbankEnabled() then
         for i = 1, 5 do
             self:DebugPrint("BankEvent", 10, "Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + NUM_BANKBAGSLOTS + i))
             table.insert(containersBank, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + NUM_BANKBAGSLOTS + i)
         end
-    end
-    if self.db.profile.bank then
-        table.insert(containersBank, BANK_CONTAINER)
-        for i = 1, NUM_BANKBAGSLOTS do
-            self:DebugPrint("BankEvent", 10, "Adding bank container " .. (BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i))
-            table.insert(containersBank, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
-        end
-    end
-
-    
-
-    if self.db.profile.reagentbank then
-        self:DebugPrint("BankEvent", 10, "Adding bank container " .. REAGENTBANK_CONTAINER)
-        table.insert(containersBank, REAGENTBANK_CONTAINER)
     end
 
     --#TODO: Add support for reagent bags
@@ -177,18 +153,10 @@ function Yoinked:OnBankFrameOpened()
     --#TODO: add dirty flag to save updating rules
     self:ConstructRules()
 
-    if (self.db.profile.debug) then
-        for i, container in pairs(containerCache) do
-            for j, slot in pairs(container) do
-                if slot.itemID > 0 then self:DebugPrint("BankEvent", 8, "container " .. i .. ", slot " .. j .. ", item, " .. slot.itemID .. ", count " .. slot.itemCount) end
-            end
-        end
-    end
-
-    local yoinkSpeed = self.db.profile.yoinkSpeed
-    if not yoinkSpeed or type(yoinkSpeed) ~= "number" then yoinkSpeed = 1 end
+    local speed = Yoinked:GetConfigSpeed()
+    if not speed or type(speed) ~= "number" then speed = 1 end
     if not bankTicker then
-        bankTicker = C_Timer.NewTicker(yoinkSpeed, function()
+        bankTicker = C_Timer.NewTicker(speed, function()
 
             self:DebugPrint("BankEvent", 6, "Running move tick")
             if self.bankTickerRunning then bankTicker:Cancel() end
@@ -214,16 +182,16 @@ end
 
 function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
 
-    for itemID, rule in pairs(assembledRules) do
+    for itemID, rule in pairs(yoinkedAssembledRules) do
         if rule.enabled then
 
             self:DebugPrint("BankEvent", 10, "Checking " .. itemID .. ": " .. rule.bagAmount)
             local bagCount = C_Item.GetItemCount(itemID, false, false, false, false)
 
-            if bagCount < rule.bagAmount then
+            if bagCount < rule.bagAmount and rule.amountEnabled then
 
                 local needed = rule.bagAmount - bagCount
-                local bagAndBankCount = C_Item.GetItemCount(itemID, self.db.profile.bank, false, self.db.profile.reagentbank, self.db.profile.warbank)
+                local bagAndBankCount = C_Item.GetItemCount(itemID, Yoinked:GetConfigBankEnabled(), false, Yoinked:GetConfigReagentBankEnabled(), Yoinked:GetConfigWarbankEnabled())
                 self:DebugPrint("BankEvent", 10, "Verify Bag Count (" .. bagCount .. ") < Bag + Bank Count (" .. bagAndBankCount .. "): " .. tostring(bagAndBankCount > bagCount))
                 if bagAndBankCount > bagCount then
 
@@ -233,7 +201,7 @@ function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound
 
                 end
 
-            elseif bagCount > rule.bagCap then
+            elseif bagCount > rule.bagCap and rule.capEnabled then
 
                 local overflow = bagCount - rule.bagCap
 
@@ -331,11 +299,7 @@ function Yoinked:FindEmptyOrUnfilledSlot(itemToFind, containersToSearch)
 end
 
 function Yoinked:ChatCommand(input)
-    if input and input == "test" then
-        self:CreateUIFrame(true)
-    else
-        self:CreateUIFrame(false)
-    end
+    self:CreateUIFrame()
 end
 
 function Yoinked:GetOptions()
@@ -348,56 +312,56 @@ function Yoinked:GetOptions()
                 desc = "Enables searching standard character bank for items",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.bank = val end,
-                get = function(info) return self.db.profile.bank end
+                set = function(info,val) Yoinked:SetConfigBankEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigBankEnabled() end
             },
             warbankEnable = {
                 name = "Warbank",
                 desc = "Enables searching Warbank for items",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.warbank = val end,
-                get = function(info) return self.db.profile.warbank end
+                set = function(info,val) Yoinked:SetConfigWarbankEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigWarbankEnabled() end
             },
             reagentBankEnable = {
                 name = "Reagent Bank",
                 desc = "Enables searching Reagent Bank for items",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.reagentbank = val end,
-                get = function(info) return self.db.profile.reagentbank end
+                set = function(info,val) Yoinked:SetConfigReagentBankEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigReagentBankEnabled() end
             },
             guildBankEnable = {
                 name = "Guild Bank (NYI)",
                 desc = "Enables searching Guild Bank for items",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.guildbank = val end,
-                get = function(info) return self.db.profile.guildbank end
+                set = function(info,val) Yoinked:SetConfigGuildBankEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigGuildBankEnabled() end
             },
             reagentBagEnable = {
                 name = "Prefer Reagent Bag for reagents (NYI)",
                 desc = "Prioritised finding reagent bag slots if item is a reagent",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.reagentbag = val end,
-                get = function(info) return self.db.profile.reagentbag end
+                set = function(info,val) Yoinked:SetConfigReagentBagEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigReagentBagEnabled() end
             },
             debugEnable = {
                 name = "Debug",
                 desc = "Toggles debug messages",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.debug = val end,
-                get = function(info) return self.db.profile.debug end
+                set = function(info,val) Yoinked:SetConfigDebugEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigDebugEnabled() end
             },
             warbankPriorityEnable = {
                 name = "Warbank Priority (NYI - does by default but will not work for non warbank items)",
                 desc = "Prioritises Warbank for items that can go in the Warbank",
                 type = "toggle",
                 width = "full",
-                set = function(info,val) self.db.profile.preferWarbank = val end,
-                get = function(info) return self.db.profile.preferWarbank end
+                set = function(info,val) Yoinked:SetConfigWarbankPreferenceEnabled(val) end,
+                get = function(info) return Yoinked:GetConfigWarbankPreferenceEnabled() end
             },
             yoinkSpeed = {
                 name = "Yoink delay",
@@ -409,8 +373,8 @@ function Yoinked:GetOptions()
                 softMin = 0.3,
                 softMax = 2,
                 bigStep = 0.05,
-                set = function(info,val) self.db.profile.yoinkSpeed = val end,
-                get = function(info) return self.db.profile.yoinkSpeed end
+                set = function(info,val) Yoinked:SetConfigSpeed(val) end,
+                get = function(info) return Yoinked:GetConfigSpeed() end
             },
         },
     }

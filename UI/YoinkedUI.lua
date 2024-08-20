@@ -1,286 +1,208 @@
 local AceGUI = LibStub("AceGUI-3.0")
 local Sushi = LibStub('Sushi-3.2')
 
-local itemSpacing = {{0, 350, 0}, {15, 50, 20}, {20, 50, 20}, {20, 50, 20}, {35, 20, 35}, {0, 90, 0}}
-local titleSpacing = {{0, 350, 0}, {5, 70, 10}, {20, 50, 20}, {20, 50, 20}, {20, 50, 20}, {0, 90, 0}}
 local configFrame
 local newConfigFrame
-local contexts = {[1] = "Global", [2] = "Class", [3] = "Profile", [4] = "Char"}
+local currentDisplayedID = 0
 
-function Yoinked:AddRowToTable(scrollTable, itemID, valueRow, context)
+local ruleDisplayHeader, ruleDisplayIcon, ruleSelectorAddBoxHighlight
 
-    local item = Item:CreateFromItemID(itemID)
+---@table<Context, Frame>
+local yoinkedDisplayContainers = {}
 
-    self:DebugPrint("UI", 4, "Adding row to table for " .. itemID .. " in context " .. context)
-    local listItem = AceGUI:Create("SimpleGroup")
-    listItem:SetFullWidth(true)
-    listItem:SetLayout("Flow")
-    scrollTable:AddChild(listItem)
+local tooltipFrame
+local helpMode = false
 
-    self:DebugPrint("UI", 6, "Adding Label with width " .. itemSpacing[1][2] .. ", item ID " .. select(1, C_Item.GetItemInfoInstant(itemID)) .. " and icon " .. select(5, C_Item.GetItemInfoInstant(itemID)))
-    local itemLabel = AceGUI:Create("InteractiveLabel")
-    itemLabel:SetWidth(itemSpacing[1][2])
-    itemLabel:SetText(select(1, C_Item.GetItemInfoInstant(itemID)))
-    itemLabel:SetImage(select(5, C_Item.GetItemInfoInstant(itemID)))
-    itemLabel:SetCallback("OnEnter", function()
-        self:DebugPrint("UI", 6, "Showing tooltip for " .. itemID)
-        GameTooltip:SetOwner(itemLabel.frame, "ANCHOR_TOPLEFT", 0, 25)
-        GameTooltip:SetItemByID(itemID)
-        GameTooltip:Show()
-    end)
-    itemLabel:SetCallback("OnLeave", function()
-        self:DebugPrint("UI", 6, "Hiding tooltip for " .. itemID)
-        GameTooltip:Hide()
-    end)
-    listItem:AddChild(itemLabel)
+local function SetTooltip(frameInput, text)
+    if frameInput.SetCall then
+        frameInput:SetCall('OnEnter', function()
+            if helpMode then 
+                tooltipFrame:ClearAllPoints()
+                tooltipFrame:Show()
+                tooltipFrame:SetPoint('BOTTOM', frameInput, 'TOP', 0, 30)
+                tooltipFrame:SetText(text)
+            end
+        end)
+        frameInput:SetCall('OnLeave', function() tooltipFrame:Hide() end)
+    else 
+        frameInput:SetScript('OnEnter', function()
+            if helpMode then
+                tooltipFrame:ClearAllPoints()
+                tooltipFrame:Show()
+                tooltipFrame:SetPoint('BOTTOM', frameInput, 'TOP', 0, 30)
+                tooltipFrame:SetText(text)
+            end
+        end)
+        frameInput:SetScript('OnLeave', function() tooltipFrame:Hide() end)
 
-    --Set item name after it has been cached, default to showing item ID if it can't be found
-    item:ContinueOnItemLoad(function()
-        local name = item:GetItemName()
-        itemLabel:SetText(name)
-    end)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(itemSpacing[1][3] + itemSpacing[2][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(itemSpacing[1][3] + itemSpacing[2][1])
-    listItem:AddChild(spacer)
-
-    local bagAmount = AceGUI:Create("EditBox")
-    bagAmount:SetWidth(itemSpacing[2][2])
-    bagAmount:SetText(valueRow.bagAmount)
-    bagAmount:DisableButton(true)
-    bagAmount:SetCallback("OnEnterPressed", function(_,_,value)
-        value = tonumber(value)
-        if value then self.db[context].rules[itemID].bagAmount = value end
-    end)
-    bagAmount.frame:Show()
-    listItem:AddChild(bagAmount)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(itemSpacing[2][3] + itemSpacing[3][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(itemSpacing[2][3] + itemSpacing[3][1])
-    listItem:AddChild(spacer)
-
-    self:DebugPrint("UI", 6, "Adding bag cap box with width " .. tostring(itemSpacing[3][2]) .. " and text " .. valueRow.bagCap)
-    local bagCap = AceGUI:Create("EditBox")
-    bagCap:SetWidth(itemSpacing[3][2])
-    bagCap:SetText(valueRow.bagCap)
-    bagCap:DisableButton(true)
-    bagCap:SetCallback("OnEnterPressed", function(_,_,value)
-        value = tonumber(value)
-        if value then self.db[context].rules[itemID].bagCap = value end
-    end)
-    bagCap.frame:Show()
-    listItem:AddChild(bagCap)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(itemSpacing[3][3] + itemSpacing[4][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(itemSpacing[3][3] + itemSpacing[4][1])
-    listItem:AddChild(spacer)
-
-    self:DebugPrint("UI", 6, "Adding priority box with width " .. tostring(itemSpacing[4][2]) .. " and text " .. valueRow.priority)
-    local priority = AceGUI:Create("EditBox")
-    priority:SetText(valueRow.priority)
-    priority:SetWidth(itemSpacing[4][2])
-    priority:DisableButton(true)
-    priority:SetCallback("OnEnterPressed", function(_,_,value)
-        value = tonumber(value)
-        if value and value >= 1 and value <= 10 then self.db[context].rules[itemID].priority = value end
-    end)
-    priority.frame:Show()
-    listItem:AddChild(priority)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(itemSpacing[4][3] + itemSpacing[5][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(itemSpacing[4][3] + itemSpacing[5][1])
-    listItem:AddChild(spacer)
-
-    self:DebugPrint("UI", 6, "Adding enabled checkbox with width " .. itemSpacing[5][2] .. " and text " .. tostring(valueRow.enabled))
-    local itemEnabled = AceGUI:Create("CheckBox")
-    itemEnabled:SetValue(valueRow.enabled)
-    itemEnabled:SetWidth(itemSpacing[5][2])
-    itemEnabled:SetLabel("")
-    itemEnabled:SetCallback("OnValueChanged", function(_,_,value)
-        self.db[context].rules[itemID].enabled = value
-    end)
-    itemEnabled.frame:Show()
-    listItem:AddChild(itemEnabled)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(itemSpacing[5][3] + itemSpacing[6][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(itemSpacing[5][3] + itemSpacing[6][1])
-    listItem:AddChild(spacer)
-
-    self:DebugPrint("UI", 6, "Adding delete button with width " .. tostring(itemSpacing[6][2]))
-    local deleteButton = AceGUI:Create("Button")
-    deleteButton:SetText("Delete")
-    deleteButton:SetWidth(itemSpacing[6][2])
-    deleteButton:SetCallback("OnClick", function(_,_)
-        self.db[context].rules[itemID] = nil
-        listItem:Release()
-    end)
-    deleteButton.frame:Show()
-    listItem:AddChild(deleteButton)
+    end
 end
 
-function Yoinked:DrawRuleContainer(container, context)
+function Yoinked:OnCursorChanged()
+    if ruleSelectorAddBoxHighlight then
+        if CursorHasItem() then
+            ruleSelectorAddBoxHighlight:Show()
+        else
+            ruleSelectorAddBoxHighlight:Hide()
+        end
+    end
+end
 
-    local contextLabels = {
-        ["char"] = UnitName("player") .. " rules:",
-        ["class"] = select(1, UnitClass("player")) .. " rules:",
-        ["global"] = "Global rules:",
-        ["profile"] = self.db:GetCurrentProfile() .. " profile rules:"
-    }
+local function CreateBorderedIcon(parent, size, texture)
+    local baseIcon = CreateFrame("Frame", nil, parent)
+    baseIcon.tex = baseIcon:CreateTexture()
+    baseIcon.tex:SetAllPoints(baseIcon)
+    baseIcon.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    if texture then baseIcon.tex:SetTexture(texture) end
+    baseIcon:SetSize(size, size)
 
-    -- Container rule creation
-    local addBox = AceGUI:Create("EditBox")
-    addBox:SetWidth(100)
-    addBox:SetLabel("Add Item:")
-    addBox:SetCallback("OnEnter", function(...)
+    local borderIcon = CreateFrame("Frame", nil, baseIcon)
+    borderIcon:SetPoint("CENTER", baseIcon, "CENTER", 0, 0)
+    borderIcon:SetSize(size*(48/30), size*(48/30))
+    borderIcon.tex = borderIcon:CreateTexture()
+    borderIcon.tex:SetAllPoints(borderIcon)
+    borderIcon.tex:SetTexture("interface/spellbook/rotationiconframe")
+
+    return baseIcon
+end
+
+local function DisplayRule(itemID)
+    Yoinked:DebugPrint("UI", 6, "Displaying rule for " .. itemID)
+
+    currentDisplayedID = itemID
+
+    if itemID and C_Item.GetItemInfoInstant(itemID) then
+        for context in pairs(YOINKED_CONTEXTS) do
+            yoinkedDisplayContainers[context].SetRuleContents(Yoinked:GetRule(context, itemID))
+        end
+    end
+
+    if ruleDisplayHeader then
+        local item = Item:CreateFromItemID(itemID)
+        item:ContinueOnItemLoad(function()
+
+            ruleDisplayHeader:SetText(item:GetItemName())
+            ruleDisplayIcon.tex:SetTexture(item:GetItemIcon())
+        end)
+    end
+
+end
+
+local function CreateRuleSelector()
+
+    local ruleSelectorContainer = CreateFrame("Frame", "YoinkedRuleSelectorContainer", newConfigFrame, "InsetFrameTemplate3")
+    ruleSelectorContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 20, -100)
+    ruleSelectorContainer:SetWidth(300)
+    ruleSelectorContainer:SetPoint("BOTTOM", newConfigFrame, "BOTTOM", 0, 20)
+
+    local ruleSelectorSearchBox = CreateFrame("EditBox", "YoinkedRuleSelectorSearchBox", newConfigFrame, "InputBoxTemplate")
+    ruleSelectorSearchBox:SetPoint("BOTTOMLEFT", ruleSelectorContainer, "TOPLEFT", 6, 5)
+    ruleSelectorSearchBox:SetSize(293, 20)
+    ruleSelectorSearchBox:SetAutoFocus(false)
+    ruleSelectorSearchBox:SetScript("OnTextChanged", function() end)
+    SetTooltip(ruleSelectorSearchBox, "NYI, but will allow you to search the rules you have added a little easier")
+
+    local ruleSelectorScrollBox = CreateFrame("Frame", nil, ruleSelectorContainer, "WowScrollBoxList")
+    ruleSelectorScrollBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 3, -48)
+    ruleSelectorScrollBox:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -20, 3)
+
+    local ruleSelectorScrollBar = CreateFrame("EventFrame", nil, newConfigFrame, "MinimalScrollBar")
+    ruleSelectorScrollBar:SetPoint("TOPRIGHT", ruleSelectorContainer, "TOPRIGHT", -8, -51)
+    ruleSelectorScrollBar:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -8, 6)
+
+    local ruleSelectorDataProvider = CreateDataProvider()
+    local ruleSelectorScrollView = CreateScrollBoxListLinearView()
+    ruleSelectorScrollView:SetDataProvider(ruleSelectorDataProvider)
+
+    ScrollUtil.InitScrollBoxListWithScrollBar(ruleSelectorScrollBox, ruleSelectorScrollBar, ruleSelectorScrollView)
+
+    local ruleSelectorAddBox = CreateFrame("Button", "YoinkedRuleSelectorAddBox", ruleSelectorContainer, "YoinkedRuleContainerButtonTemplate")
+    SetTooltip(ruleSelectorAddBox, "Drag an item here to add a rule for it")
+    ruleSelectorAddBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 0, -3)
+    ruleSelectorAddBox:SetSize(300, 45)
+    ruleSelectorAddBox.ItemIcon:SetTexture(135769)
+    ruleSelectorAddBox:SetScript("OnClick", function() 
         if CursorHasItem() then
             local infoType, itemID, _ = GetCursorInfo()
-            if infoType == "item" then
-                addBox:SetText(itemID)
-                ClearCursor()
+            Yoinked:DebugPrint("UI", 6, "Adding rule for " .. itemID)
+            if infoType ~= "item" then return end
+            Yoinked:DebugPrint("UI", 8, "Confirmed item: " .. itemID)
+            if not itemID or not C_Item.GetItemInfo(itemID) or Yoinked:GetRuleExists(itemID) then
+                Yoinked:DebugPrint("UI", 6, "Item rule already exists")
+                return
             end
+            for context, _ in YOINKED_CONTEXTS do
+                Yoinked:DebugPrint("UI", 8, "Adding rule for " .. itemID .. " in context " .. context)
+                Yoinked:SetRule(context, itemID, 20, 20, 10, true)
+            end
+
+            Yoinked:DebugPrint("UI", 6, "Creating item and awaiting async load")
+            local item = Item:CreateFromItemID(itemID)
+
+            item:ContinueOnItemLoad(function()
+                Yoinked:DebugPrint("UI", 6, itemID .. " async load complete")
+                local myData = {
+                    itemID = item:GetItemID(),
+                    textureID = item:GetItemIcon(),
+                    buttonText = item:GetItemName()
+                }
+                Yoinked:DebugPrint("UI", 6, itemID .. " inserting into data provider")
+                ruleSelectorDataProvider:Insert(myData)
+
+            end)
+
         end
+
     end)
 
-    local itemLabel = AceGUI:Create("Label")
-    itemLabel:SetText("")
-    itemLabel:SetWidth(350)
+    ruleSelectorAddBoxHighlight = CreateFrame("Frame", nil, ruleSelectorAddBox)
+    ruleSelectorAddBoxHighlight:SetPoint("TOPLEFT", ruleSelectorAddBox, "TOPLEFT")
+    ruleSelectorAddBoxHighlight:SetSize(300, 45)
+    ruleSelectorAddBoxHighlight.tex = ruleSelectorAddBoxHighlight:CreateTexture()
+    ruleSelectorAddBoxHighlight.tex:SetAllPoints(ruleSelectorAddBoxHighlight)
+    ruleSelectorAddBoxHighlight.tex:SetTexture("interface/addons/yoinked/assets/YOINKED-BUTTON-HIGHLIGHT-LARGE-GREEN")
+    ruleSelectorAddBoxHighlight.tex:SetTexCoord(0, 0.55, 0, 0.7175)
+    ruleSelectorAddBoxHighlight:Hide()
 
-    addBox:SetCallback("OnTextChanged", function(_,_,value)
+    ruleSelectorScrollView:SetElementExtent(45)
+    ruleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate",  function (button, data)
+        local buttonText = data.buttonText
+        button:SetText(data.itemID .. "\n" .. buttonText)
+        button.ItemIcon:SetTexture(data.textureID)
+        button.ItemIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-        itemLabel:SetText("")
-        itemLabel:SetImage("")
+        button:SetScript("OnClick", function()
 
-        value = tonumber(value)
+            DisplayRule(data.itemID)
 
-        if not value or value == "fail" or value == "" or not C_Item.DoesItemExistByID(value) then
-            return
-        end
-
-        local item = Item:CreateFromItemID(value)
-
-        item:ContinueOnItemLoad(function()
-            if item and item:GetItemName() then
-                itemLabel:SetText(item:GetItemName())
-                itemLabel:SetImage(item:GetItemIcon())
-            else
-                itemLabel:SetText("")
-                itemLabel:SetImage("")
-            end
         end)
     end)
 
-    local moduleEnabled = AceGUI:Create("CheckBox")
-    moduleEnabled:SetValue(self.db.char[context .. "Enabled"])
-    moduleEnabled:SetWidth(200)
-    moduleEnabled:SetLabel(contextLabels[context] .. (self.db.char[context .. "Enabled"] and "Enabled" or "Disabled"))
-    moduleEnabled:SetCallback("OnValueChanged", function(_,_,value)
-        self.db.char[context .. "Enabled"] = value
-        moduleEnabled:SetLabel(contextLabels[context] .. (value and "Enabled" or "Disabled"))
-    end)
-    moduleEnabled.frame:Show()
+    for i, v in pairs(Yoinked:GetRuleset()) do
 
-    container:AddChild(addBox)
-    container:AddChild(itemLabel)
-    container:AddChild(moduleEnabled)
+        if C_Item.DoesItemExistByID(i) then
+            local item = Item:CreateFromItemID(i)
 
+            item:ContinueOnItemLoad(function()
+                local myData = {
+                    itemID = item:GetItemID(),
+                    textureID = item:GetItemIcon(),
+                    buttonText = item:GetItemName()
+                }
 
-    -- Table header 
-    local titleGroup = AceGUI:Create("SimpleGroup")
-    titleGroup:SetFullWidth(true)
-    titleGroup:SetLayout("Flow")
-    container:AddChild(titleGroup)
+                ruleSelectorDataProvider:Insert(myData)
 
-    local titleItems = AceGUI:Create("InteractiveLabel")
-    titleItems:SetWidth(titleSpacing[1][2])
-    titleItems:SetHeight(20)
-    titleItems:SetText("Items")
-    titleGroup:AddChild(titleItems)
+            end)
 
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[1][3] + titleSpacing[2][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(titleSpacing[1][3] + titleSpacing[2][1])
-    titleGroup:AddChild(spacer)
-
-    local titleBagAmount = AceGUI:Create("InteractiveLabel")
-    titleBagAmount:SetWidth(titleSpacing[2][2])
-    titleBagAmount:SetText("Bag Amount")
-    titleBagAmount:SetCallback("OnEnter", function() end)
-    titleBagAmount:SetCallback("OnLeave", function() end)
-    titleGroup:AddChild(titleBagAmount)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[2][3] + titleSpacing[3][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(titleSpacing[2][3] + titleSpacing[3][1])
-    titleGroup:AddChild(spacer)
-
-    local titleBagCap = AceGUI:Create("InteractiveLabel")
-    titleBagCap:SetWidth(titleSpacing[3][2])
-    titleBagCap:SetText("Bag Cap")
-    titleGroup:AddChild(titleBagCap)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[3][3] + titleSpacing[4][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(titleSpacing[3][3] + titleSpacing[4][1])
-    titleGroup:AddChild(spacer)
-
-    local titlePriority = AceGUI:Create("InteractiveLabel")
-    titlePriority:SetText("Priority")
-    titlePriority:SetWidth(titleSpacing[4][2])
-    titleGroup:AddChild(titlePriority)
-
-    self:DebugPrint("UI", 9, "Adding spacer with width " .. tostring(titleSpacing[4][3] + titleSpacing[5][1]))
-    local spacer = AceGUI:Create("Label")
-    spacer:SetText("")
-    spacer:SetWidth(titleSpacing[4][3] + titleSpacing[5][1])
-    titleGroup:AddChild(spacer)
-
-    local titleItemEnabled = AceGUI:Create("InteractiveLabel")
-    titleItemEnabled:SetText("Enabled")
-    titleItemEnabled:SetWidth(titleSpacing[5][2])
-    titleGroup:AddChild(titleItemEnabled)
-
-    -- Table
-    local scrollcontainer = AceGUI:Create("SimpleGroup")
-    scrollcontainer:SetFullWidth(true)
-    scrollcontainer:SetFullHeight(true)
-    scrollcontainer:SetLayout("Fill")
-
-    container:AddChild(scrollcontainer)
-
-    local scroll = AceGUI:Create("ScrollFrame")
-    scroll:SetLayout("List")
-    scrollcontainer:AddChild(scroll)
-    for i,v in pairs(self.db[context].rules) do
-
-        self:AddRowToTable(scroll, i, v, context)
+        end
 
     end
 
-    addBox:SetCallback("OnEnterPressed", function(_,_,text)
-        local value = tonumber(text)
-        if value and C_Item.GetItemInfo(value) then
-            self.db[context].rules[value] = {bagAmount=20, bagCap = 20, priority=10, enabled=true}
-            self:AddRowToTable(scroll, value, self.db[context].rules[value])
-        end
-    end)
-    
 end
 
 local function CreateBaseUIFrame()
     newConfigFrame = CreateFrame("Frame", "YoinkedConfigUI", UIParent, "PortraitFrameTemplate")
+
     local color = CreateColorFromHexString("FF1E1D20")
     local r, g, b = color:GetRGB()
     newConfigFrame.Bg:SetColorTexture(r, g, b, 0.8)
@@ -321,245 +243,245 @@ local function CreateBaseUIFrame()
     resizeButton:SetScript("OnMouseUp", function(self, button)
         newConfigFrame:StopMovingOrSizing()
     end)
+
+    tooltipFrame = Sushi.Glowbox(newConfigFrame, 'Hover for information')
+    tooltipFrame:SetPoint('BOTTOM', UIParent, 'TOP', 0, 30)
+    tooltipFrame:SetFrameStrata("TOOLTIP")
+
+    local helpButton = Sushi.HelpButton(newConfigFrame)
+    helpButton:SetTip('Help', 'Click to open help tooltips')
+    helpButton:SetPoint('TOPRIGHT', -10, -40)
+    helpButton:SetText('Hello')
+    helpButton:SetCall('OnClick', function()
+        helpMode = not helpMode
+        tooltipFrame:SetShown(helpMode)
+        tooltipFrame:SetPoint('BOTTOM', helpButton, 'TOP', 0, 30)
+        if helpMode then
+            tooltipFrame:SetText("Help enabled. Mouse over the interface to learn more.")
+        end
+    end)
+
 end
 
-function Yoinked:CreateUIFrame(testMode)
+local function CreateRuleDisplay()
 
-    if testMode then
+    local ruleDisplayContainer = CreateFrame("Frame", "YoinkedRuleDisplayContainer", newConfigFrame, "InsetFrameTemplate3")
+    ruleDisplayContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 350, -100)
+    ruleDisplayContainer:SetPoint("BOTTOMRIGHT", newConfigFrame, "BOTTOMRIGHT", -20, 20)
 
-        if newConfigFrame and newConfigFrame:IsShown() then return end
-        if not newConfigFrame then
+    ruleDisplayHeader = Sushi.Header(ruleDisplayContainer, "")
+    ruleDisplayHeader:SetWidth(300)
+    ruleDisplayHeader:SetUnderlined(true)
+    ruleDisplayHeader:SetText("Select a Rule")
+    ruleDisplayHeader:SetPoint('BOTTOMLEFT', ruleDisplayContainer, 'TOPLEFT', 50, 10)
+    SetTooltip(ruleDisplayHeader, "The current item you have selected, and are viewing the rules of below")
 
-            CreateBaseUIFrame()
+    ruleDisplayIcon = CreateBorderedIcon(ruleDisplayHeader, 30, "")
+    ruleDisplayIcon:SetPoint("RIGHT", ruleDisplayHeader, "LEFT", -18, 0)
+    SetTooltip(ruleDisplayHeader, "The current icon you have selected, and are viewing the rules of below")
+    ---@param context Context
+    local function createDisplayContainer(context)
 
-            local ruleSelectorContainer = CreateFrame("Frame", "YoinkedRuleSelectorContainer", newConfigFrame, "InsetFrameTemplate3")
-            ruleSelectorContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 20, -100)
-            ruleSelectorContainer:SetWidth(300)
-            ruleSelectorContainer:SetPoint("BOTTOM", newConfigFrame, "BOTTOM", 0, 20)
+        local contextID = YOINKED_CONTEXTS[context].id
+        local headerString = "Yoinked" .. YOINKED_CONTEXTS[context].displayString .. "DisplayContainer"
 
-            local ruleSelectorSearchBox = CreateFrame("EditBox", "ToinkedRuleSelectorSearchBox", newConfigFrame, "InputBoxTemplate")
-            ruleSelectorSearchBox:SetPoint("BOTTOMLEFT", ruleSelectorContainer, "TOPLEFT", 6, 5)
-            ruleSelectorSearchBox:SetSize(293, 20)
-            ruleSelectorSearchBox:SetAutoFocus(false)
-            ruleSelectorSearchBox:SetScript("OnTextChanged", function() end)
+        local containerHeight = ruleDisplayContainer:GetHeight()-6
+        local step = containerHeight/4
 
-            local ruleSelectorScrollBox = CreateFrame("Frame", nil, ruleSelectorContainer, "WowScrollBoxList")
-            ruleSelectorScrollBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 3, -3)
-            ruleSelectorScrollBox:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -20, 3)
+        local ruleDisplayContextContainer = CreateFrame("Frame", headerString, ruleDisplayContainer, "YoinkedRuleDisplayTemplate")
+        ruleDisplayContextContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(contextID-1)*step - 3)
+        ruleDisplayContextContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -contextID*step - 3)
 
-            local ruleSelectorScrollBar = CreateFrame("EventFrame", nil, newConfigFrame, "MinimalScrollBar")
-            ruleSelectorScrollBar:SetPoint("TOPRIGHT", ruleSelectorContainer, "TOPRIGHT", -8, -6)
-            ruleSelectorScrollBar:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -8, 6)
+        yoinkedDisplayContainers[context] = ruleDisplayContextContainer
 
-            local ruleSelectorDataProvider = CreateDataProvider()
-            local ruleSelectorScrollView = CreateScrollBoxListLinearView()
-            ruleSelectorScrollView:SetDataProvider(ruleSelectorDataProvider)
+        local ruleDisplayTitle = Sushi.Header(ruleDisplayContextContainer, YOINKED_CONTEXTS[context].displayString)
+        ruleDisplayTitle:SetWidth(80)
+        ruleDisplayTitle:SetUnderlined(true)
+        ruleDisplayTitle:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 30, -8)
+        ruleDisplayTitle:SetJustifyH("RIGHT")
+        SetTooltip(ruleDisplayTitle, YOINKED_CONTEXTS[context].tooltipString)
 
-            ScrollUtil.InitScrollBoxListWithScrollBar(ruleSelectorScrollBox, ruleSelectorScrollBar, ruleSelectorScrollView)
+        local ruleDisplayDescription = Sushi.Header(ruleDisplayContextContainer, YOINKED_CONTEXTS[context].descriptionString)
+        ruleDisplayDescription:SetWidth(150)
+        ruleDisplayDescription:SetUnderlined(false)
+        ruleDisplayDescription:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 120, -8)
+        SetTooltip(ruleDisplayDescription, YOINKED_CONTEXTS[context].tooltipString)
 
-            -- The first argument here can either be a frame type or frame template. We're just passing the "UIPanelButtonTemplate" template here
-            ruleSelectorScrollView:SetElementExtent(45)
-            ruleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate",  function (button, data)
-                local buttonText = data.buttonText
-                button:SetText(data.itemID .. "\n" .. buttonText)
-                button.ItemIcon:SetTexture(data.textureID)
-                button.ItemIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            end)
-
-            for i = 1, 15 do
-                local myData = {
-                    itemID = 191383,
-                    textureID = 967534,
-                    buttonText = "Elemental Potion of Ultimate Power " .. i,
-                }
-
-                ruleSelectorDataProvider:Insert(myData)
-            end
-
-            local ruleDisplayContainer = CreateFrame("Frame", "YoinkedRuleDisplayContainer", newConfigFrame, "InsetFrameTemplate3")
-            ruleDisplayContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 350, -100)
-            ruleDisplayContainer:SetPoint("BOTTOMRIGHT", newConfigFrame, "BOTTOMRIGHT", -20, 20)
-
-            
-            local function createDisplayContainer(contextID)
-
-                local itemID = 191383
-
-                local headerString = "Yoinked" .. contexts[contextID] .. "DisplayContainer"
-
-                local containerHeight = ruleDisplayContainer:GetHeight()-6
-                local step = containerHeight/4
-
-                local displayContainer = CreateFrame("Frame", headerString, ruleDisplayContainer, "YoinkedRuleDisplayTemplate")
-                displayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(contextID-1)*step - 3)
-                displayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -contextID*step - 3)
-
-                local title = Sushi.Header(displayContainer, contexts[contextID])
-                title:SetWidth(200)
-                title:SetUnderlined(true)
-                title:SetPoint('TOPLEFT', displayContainer, 'TOPLEFT', 10, -8)
-
-                local enabled = Sushi.Check(displayContainer, 'Enabled')
-                enabled:SetPoint('TOPRIGHT', displayContainer, 'TOPRIGHT', -2, -2)
-                enabled:SetText("Enabled")
-                enabled:SetWidth(90)
-                enabled:SetCall('OnClick', function(check, mouseButton, checked)
-                    if checked then
-                        enabled:SetText("Enabled")
-                        enabled:SetWidth(90)
-                    else
-                        enabled:SetText("Disabled")
-                        enabled:SetWidth(90)
-                    end
-                end)
-
-                local boxCap = Sushi.BoxEdit(displayContainer)
-                boxCap:SetWidth(120)
-                boxCap:SetPoint('TOPLEFT', displayContainer, 'TOPLEFT', 143, -60)
-                boxCap:SetText("test")
-
-                local frame = CreateFrame("Frame", nil, displayContainer)
-                frame:SetPoint("BOTTOMRIGHT", boxCap, "TOPRIGHT", -2, 0)
-                frame.tex = frame:CreateTexture()
-                frame.tex:SetAllPoints(frame)
-                frame.tex:SetTexture(413587)
-                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                frame:SetSize(20, 20)
-
-                local f = CreateFrame("Frame", nil, displayContainer)
-                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
-                f:SetSize(32, 32)
-                f.tex = f:CreateTexture()
-                f.tex:SetAllPoints(f)
-                f.tex:SetTexture("interface/spellbook/rotationiconframe")
-
-                local arrowFrame = CreateFrame("Frame", nil, frame)
-                arrowFrame:SetPoint("RIGHT", frame, "LEFT", 5, 0)
-                arrowFrame.tex = arrowFrame:CreateTexture()
-                arrowFrame.tex:SetAllPoints(arrowFrame)
-                arrowFrame.tex:SetTexture("interface/moneyframe/arrow-right-disabled")
-                arrowFrame:SetSize(16, 16)
-
-                local frame = CreateFrame("Frame", nil, displayContainer)
-                frame:SetPoint("RIGHT", arrowFrame, "LEFT", -3, 0)
-                frame.tex = frame:CreateTexture()
-                frame.tex:SetAllPoints(frame)
-                frame.tex:SetTexture(133633)
-                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                frame:SetSize(20, 20)
-
-                local f = CreateFrame("Frame", nil, displayContainer)
-                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
-                f:SetSize(32, 32)
-                f.tex = f:CreateTexture()
-                f.tex:SetAllPoints(f)
-                f.tex:SetTexture("interface/spellbook/rotationiconframe")
-
-                local boxYoink = Sushi.BoxEdit(displayContainer)
-                boxYoink:SetWidth(120)
-                boxYoink:SetPoint('TOPLEFT', displayContainer, 'TOPLEFT', 13, -60)
-                boxYoink:SetText("test")
-
-                local frame = CreateFrame("Frame", nil, displayContainer)
-                frame:SetPoint("BOTTOMLEFT", boxYoink, "TOPLEFT", -2, 0)
-                frame.tex = frame:CreateTexture()
-                frame.tex:SetAllPoints(frame)
-                frame.tex:SetTexture(413587)
-                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                frame:SetSize(20, 20)
-
-                local f = CreateFrame("Frame", nil, displayContainer)
-                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
-                f:SetSize(32, 32)
-                f.tex = f:CreateTexture()
-                f.tex:SetAllPoints(f)
-                f.tex:SetTexture("interface/spellbook/rotationiconframe")
-
-                local arrowFrame = CreateFrame("Frame", nil, frame)
-                arrowFrame:SetPoint("LEFT", frame, "RIGHT", 3, 0)
-                arrowFrame.tex = arrowFrame:CreateTexture()
-                arrowFrame.tex:SetAllPoints(arrowFrame)
-                arrowFrame.tex:SetTexture("interface/moneyframe/arrow-right-disabled")
-                arrowFrame:SetSize(16, 16)
-
-                local frame = CreateFrame("Frame", nil, displayContainer)
-                frame:SetPoint("LEFT", arrowFrame, "RIGHT", -5, 0)
-                frame.tex = frame:CreateTexture()
-                frame.tex:SetAllPoints(frame)
-                frame.tex:SetTexture(133633)
-                frame.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                frame:SetSize(20, 20)
-
-                local f = CreateFrame("Frame", nil, displayContainer)
-                f:SetPoint("CENTER", frame, "CENTER", 0, 0)
-                f:SetSize(32, 32)
-                f.tex = f:CreateTexture()
-                f.tex:SetAllPoints(f)
-                f.tex:SetTexture("interface/spellbook/rotationiconframe")
-
-            end
-
-            for contextID = 1, 4 do
-                createDisplayContainer(contextID)
-            end
-
-            newConfigFrame:SetScript("OnSizeChanged", function(frame)
-                print("size changed")
-                YoinkedGlobalDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()/4)
-                YoinkedClassDisplayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -ruleDisplayContainer:GetHeight()/4)
-                YoinkedClassDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()/2)
-                YoinkedCharDisplayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -ruleDisplayContainer:GetHeight()/2)
-                YoinkedCharDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()*(3/4))
-                YoinkedProfileDisplayContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -ruleDisplayContainer:GetHeight()*(3/4))
-                YoinkedProfileDisplayContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -ruleDisplayContainer:GetHeight()+3)
-            end)
-            
-        end
-
-        newConfigFrame:Show()
-
-    else
-
-        if configFrame and configFrame:IsShown() then return end
-
-        local function SelectGroup(container, _, context)
-            container:ReleaseChildren()
-            self:DrawRuleContainer(container, context)
-        end
-
-        local frame = AceGUI:Create("Frame")
-        frame:SetTitle("Yoinked")
-        frame:SetStatusText("Yoinked Config")
-
-        if Yoinked.db.profile.configWidth and Yoinked.db.profile.configWidth > 0 then
-            frame:SetWidth(Yoinked.db.profile.configWidth)
-            frame:SetHeight(Yoinked.db.profile.configHeight)
-            frame:ClearAllPoints()
-            frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", Yoinked.db.profile.configX, Yoinked.db.profile.configY)
-        else
-            frame:ClearAllPoints()
-            frame:SetPoint("CENTER", UIParent, "CENTER")
-            frame:SetWidth(875)
-        end
-
-        frame:SetCallback("OnClose", function(widget)
-            Yoinked.db.profile.configX, Yoinked.db.profile.configY, Yoinked.db.profile.configWidth, Yoinked.db.profile.configHeight = frame.frame:GetBoundsRect()
-            AceGUI:Release(widget)
+        local ruleCapEditbox = Sushi.BoxEdit(ruleDisplayContextContainer)
+        ruleCapEditbox:SetWidth(120)
+        ruleCapEditbox:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 143, -60)
+        ruleCapEditbox:SetText("")
+        ruleCapEditbox:SetCall("OnText", function(boxEdit, text)
+            local currentID = currentDisplayedID
+            Yoinked:SetRuleBagCap(context, currentID, text)
         end)
-        frame:SetLayout("Fill")
+        SetTooltip(ruleCapEditbox, "This is the bag limit. Any items over this amount will be automatically sent to the bank when you open the interface.")
 
-        local tab =  AceGUI:Create("TabGroup")
-        tab:SetLayout("Flow")
-        tab:SetTabs({{text="Character", value="char"}, {text="Class", value="class"}, {text="Global", value="global"}, {text="Profile", value="profile"}})
-        tab:SetCallback("OnGroupSelected", SelectGroup)
-        tab:SelectTab("global")
+        local ruleAmountEditbox = Sushi.BoxEdit(ruleDisplayContextContainer)
+        ruleAmountEditbox:SetWidth(120)
+        ruleAmountEditbox:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 13, -60)
+        ruleAmountEditbox:SetText("")
+        ruleAmountEditbox:SetCall("OnText", function(box, text)
+            local currentID = currentDisplayedID
+            Yoinked:SetRuleBagAmount(context, currentID, text)
+        end)
+        SetTooltip(ruleAmountEditbox, "This is the yoink amount. The addon will try to fill your bags to this amount.")
 
-        frame:AddChild(tab)
 
-        configFrame = frame
+        local right2 = CreateBorderedIcon(ruleDisplayContextContainer, 20, 413587)
+        right2:SetPoint("BOTTOMRIGHT", ruleCapEditbox, "TOPRIGHT", -2, 0)
+
+        local arrowFrameRight = CreateFrame("Frame", nil, right2)
+        arrowFrameRight:SetPoint("RIGHT", right2, "LEFT", 5, 0)
+        arrowFrameRight.tex = arrowFrameRight:CreateTexture()
+        arrowFrameRight.tex:SetAllPoints(arrowFrameRight)
+        arrowFrameRight.tex:SetTexture("interface/moneyframe/arrow-right-disabled")
+        arrowFrameRight:SetSize(16, 16)
+
+        local right1 = CreateBorderedIcon(ruleDisplayContextContainer, 20, 133633)
+        right1:SetPoint("RIGHT", arrowFrameRight, "LEFT", -3, 0)
+
+        local left1 = CreateBorderedIcon(ruleDisplayContextContainer, 20, 413587)
+        left1:SetPoint("BOTTOMLEFT", ruleAmountEditbox, "TOPLEFT", -2, 0)
+
+        local arrowFrameLeft = CreateFrame("Frame", nil, left1)
+        arrowFrameLeft:SetPoint("LEFT", left1, "RIGHT", 3, 0)
+        arrowFrameLeft.tex = arrowFrameLeft:CreateTexture()
+        arrowFrameLeft.tex:SetAllPoints(arrowFrameLeft)
+        arrowFrameLeft.tex:SetTexture("interface/moneyframe/arrow-right-disabled")
+        arrowFrameLeft:SetSize(16, 16)
+
+        local left2 = CreateBorderedIcon(ruleDisplayContextContainer, 20, 133633)
+        left2:SetPoint("LEFT", arrowFrameLeft, "RIGHT", -5, 0)
+
+        local rulePrioritySlider = Sushi.Slider(ruleDisplayContextContainer, "Priority", 1, 1, 10, 1)
+        rulePrioritySlider:SetRange(1, 10, "Low", "High")
+        rulePrioritySlider:SetCall('OnValue', function(slider, value)
+            local currentID = currentDisplayedID
+            Yoinked:SetRulePriority(context, currentID, value)
+        end)
+        rulePrioritySlider:SetPoint("BOTTOMRIGHT", ruleDisplayContextContainer, "BOTTOMRIGHT", -10, 20)
+        rulePrioritySlider:SetWidth(140)
+        SetTooltip(rulePrioritySlider, "Rule importance. If more than one rule is enabled for an item, whichever rule has the higher priority set will be used.")
+
+        local ruleAmountEnabledCheckbox = Sushi.Check(left2, '')
+        local ruleCapEnabledCheckbox = Sushi.Check(right1, '')
+
+        local function updateContextState()
+
+            local contextEnabled = Yoinked:GetContextEnabled(context)
+            local _, _, _, ruleEnabled, amountEnabled, capEnabled = Yoinked:GetRule(context, currentDisplayedID)
+
+            local interactEnabled = contextEnabled and ruleEnabled
+
+            ruleDisplayDescription:SetNormalFontObject(interactEnabled and GameFontNormalLeft or GameFontNormalLeftGrey)
+            ruleDisplayTitle:SetNormalFontObject(interactEnabled and GameFontNormalLeft or GameFontNormalLeftGrey)
+            
+            ruleCapEditbox:SetEnabled(interactEnabled)
+            ruleCapEditbox:SetShown(capEnabled)
+            ruleAmountEditbox:SetEnabled(interactEnabled)
+            ruleAmountEditbox:SetShown(amountEnabled)
+            rulePrioritySlider:SetEnabled(interactEnabled)
+            ruleAmountEnabledCheckbox:SetEnabled(interactEnabled)
+            ruleCapEnabledCheckbox:SetEnabled(interactEnabled)
+
+            left1.tex:SetDesaturated(not interactEnabled)
+            left2.tex:SetDesaturated(not interactEnabled)
+
+            right1.tex:SetDesaturated(not interactEnabled)
+            right2.tex:SetDesaturated(not interactEnabled)
+
+        end
+
+        ruleAmountEnabledCheckbox:SetPoint('LEFT', left2, 'RIGHT', 10, 0)
+        ruleAmountEnabledCheckbox:SetText("")
+        ruleAmountEnabledCheckbox:SetWidth(20)
+        ruleAmountEnabledCheckbox:SetCall('OnClick', function(check, mouseButton, checked)
+            local currentID = currentDisplayedID
+            ruleAmountEnabledCheckbox:SetWidth(20)
+            Yoinked:SetRuleAmountEnabled(context, currentID, checked)
+            updateContextState()
+        end)
+        SetTooltip(ruleAmountEnabledCheckbox, "Enable or disable this rule yoinking items from your bank.")
+
+        ruleCapEnabledCheckbox:SetPoint('RIGHT', right1, 'LEFT', -10, 0)
+        ruleCapEnabledCheckbox:SetText("")
+        ruleCapEnabledCheckbox:SetWidth(20)
+        ruleCapEnabledCheckbox:SetCall('OnClick', function(check, mouseButton, checked)
+            local currentID = currentDisplayedID
+            ruleCapEnabledCheckbox:SetWidth(20)
+            Yoinked:SetRuleCapEnabled(context, currentID, checked)
+            updateContextState()
+        end)
+        SetTooltip(ruleCapEnabledCheckbox, "Enable or disable this rule sending excess items from your bags to bank.")
+
+        local ruleEnabledCheckbox = Sushi.Check(ruleDisplayContextContainer, 'Enabled')
+        ruleEnabledCheckbox:SetPoint('TOPRIGHT', ruleDisplayContextContainer, 'TOPRIGHT', -2, -2)
+        ruleEnabledCheckbox:SetText("Enabled")
+        ruleEnabledCheckbox:SetWidth(90)
+        ruleEnabledCheckbox:SetCall('OnClick', function(check, mouseButton, checked)
+            local currentID = currentDisplayedID
+            ruleEnabledCheckbox:SetText(checked and "Enabled" or "Disabled")
+            ruleEnabledCheckbox:SetWidth(90)
+            Yoinked:SetRuleAmountEnabled(context, currentID, checked)
+            updateContextState()
+        end)
+        SetTooltip(ruleEnabledCheckbox, "Enable or disable this rule pulling items from your bank.")
+
+        ruleDisplayContextContainer.SetRuleContents = function(bagAmount, bagCap, priority, enabled)
+            ruleCapEditbox:SetValue(bagCap and bagCap or 0)
+            ruleAmountEditbox:SetValue(bagAmount and bagAmount or 0)
+            ruleEnabledCheckbox:SetValue(enabled and true or false)
+            ruleEnabledCheckbox:SetText(enabled and "Enabled" or "Disabled")
+            ruleEnabledCheckbox:SetWidth(90)
+            rulePrioritySlider:SetValue(priority and priority or 1)
+
+            updateContextState()
+        end
+
+        local contextEnabledState = Sushi.Check(ruleDisplayContextContainer, '')
+        contextEnabledState:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 2, 0)
+        contextEnabledState:SetWidth(20)
+        contextEnabledState:SetChecked(Yoinked:GetContextEnabled(context))
+        contextEnabledState:SetCall('OnClick', function(check, mouseButton, checked)
+            contextEnabledState:SetWidth(20)
+            if checked ~= nil then Yoinked:SetContextEnabled(context, checked) end
+            updateContextState()
+        end)
+        SetTooltip(contextEnabledState, "Set if " .. context .. " rules are enabled for " .. UnitName("player"))
+
+        updateContextState()
 
     end
 
-    --don't execute if there's an existing frame open
-    
+    for context in pairs(YOINKED_CONTEXTS) do
+        createDisplayContainer(context)
+    end
+
+    newConfigFrame:SetScript("OnSizeChanged", function(frame)
+        local containerHeight = ruleDisplayContainer:GetHeight()-6
+        local step = containerHeight/4
+
+        for context, info in pairs(YOINKED_CONTEXTS) do
+        yoinkedDisplayContainers[context]:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(info.id-1)*step - 3)
+        yoinkedDisplayContainers[context]:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -info.id*step - 3)
+        end
+    end)
+end
+
+function Yoinked:CreateUIFrame()
+
+    if newConfigFrame and newConfigFrame:IsShown() then return end
+    if not newConfigFrame then
+
+        CreateBaseUIFrame()
+
+        CreateRuleSelector()
+
+        CreateRuleDisplay()
+        
+    end
+
+    newConfigFrame:Show()
+
 end

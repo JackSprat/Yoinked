@@ -25,4 +25,5 @@ Libs\Sushi-3.2\Sushi-3.2.xml
 
 
 Yoinked.lua
+Database\YoinkedDB.lua
 UI\YoinkedUI.lua

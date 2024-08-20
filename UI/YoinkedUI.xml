@@ -1,53 +1,5 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
-	<Frame name="YoinkedRuleScrollTemplate" virtual="true">
-		<Size x="300" y="505"/>
-		<Layers>
-			<Layer level="BACKGROUND">
-				<Texture parentKey="Background" atlas="Professions-background-summarylist" setAllPoints="true"/>
-			</Layer>
-			<Layer level="ARTWORK">
-				<FontString parentKey="NoResultsText" inherits="GameFontNormal" text="PROFESSIONS_NO_JOURNAL_ENTRIES" hidden="true">
-					<Size x="200" y="0"/>
-					<Anchors>
-						<Anchor point="TOP" x="0" y="-60"/>
-					</Anchors>
-				</FontString>
-			</Layer>
-		</Layers>
-		<Frames>
-			<Frame parentKey="BackgroundNineSlice" useParentLevel="true" inherits="NineSlicePanelTemplate">
-				<KeyValues>
-					<KeyValue key="layoutType" value="InsetFrameTemplate" type="string"/>
-				</KeyValues>
-				<Anchors>
-					<Anchor point="TOPLEFT"/>
-					<Anchor point="BOTTOMRIGHT"/>
-				</Anchors>
-			</Frame>
-			
-			<EditBox parentKey="SearchBox" autoFocus="false" inherits="SearchBoxTemplate">
-				<Size y="20"/>
-				<Anchors>
-					<Anchor point="TOPRIGHT" x="-8" y="-9"/>
-					<Anchor point="TOPLEFT" x="13" y="-8"/>
-				</Anchors>
-			</EditBox>
-
-			<Frame parentKey="ScrollBox" inherits="WowScrollBoxList">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.SearchBox" relativePoint="BOTTOMLEFT" x="-5" y="-7"/>
-					<Anchor point="BOTTOMRIGHT" x="-20" y="5"/>
-				</Anchors>
-			</Frame>
-			<EventFrame parentKey="ScrollBar" inherits="MinimalScrollBar">
-				<Anchors>
-					<Anchor point="TOPLEFT" relativeKey="$parent.ScrollBox" relativePoint="TOPRIGHT" x="0" y="0"/>
-					<Anchor point="BOTTOMLEFT" relativeKey="$parent.ScrollBox" relativePoint="BOTTOMRIGHT" x="0" y="0"/>
-				</Anchors>
-			</EventFrame>
-		</Frames>
-	</Frame>
     <Button name="YoinkedRuleContainerButtonTemplate" virtual="true">
         <Size x="290"/>
 		<Layers>
@@ -120,13 +72,15 @@
 					</Anchors>
 					<TexCoords left="0.09375" right="0.53125" top="0.1875" bottom="0.625"/>
 				</Texture>
+			</Layer>
+            <Layer level="ARTWORK">
                 <Texture parentKey="ItemIcon" name="$parentItemIcon">
                     <Size x="30" y="30"/>
                     <Anchors>
 						<Anchor point="TOPLEFT" relativeKey="$parent.TopLeft" relativePoint="TOPLEFT" x="7" y="-7"/>
 					</Anchors>
                 </Texture>
-			</Layer>
+            </Layer>
             <Layer level="BORDER">
                 <Texture name="$parentOverlayIcon" file="interface\spellbook\rotationiconframe">
                     <Size x="48" y="48"/>
@@ -219,8 +173,8 @@
 		<NormalFont style="GameFontHighlightSmall"/>
 		<HighlightFont style="GameFontHighlightSmall"/>
 		<DisabledFont style="GameFontDisableSmall"/>
-		<HighlightTexture file="Interface\Buttons\UI-Silver-Button-Highlight" alphaMode="ADD">
-			<TexCoords left="0" right="1.0" top="0.03" bottom="0.7175"/>
+		<HighlightTexture file="Interface\addons\Yoinked\Assets\YOINKED-BUTTON-HIGHLIGHT-LARGE" alphaMode="ADD">
+			<TexCoords left="0" right="0.55" top="0" bottom="0.7175"/>
 		</HighlightTexture>
     </Button>
     <Frame name="YoinkedRuleDisplayTemplate" virtual="true">
