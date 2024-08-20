@@ -4,8 +4,9 @@ local Sushi = LibStub('Sushi-3.2')
 local configFrame
 local newConfigFrame
 local currentDisplayedID = 0
+local searchFilterText
 
-local ruleDisplayHeader, ruleDisplayIcon, ruleSelectorAddBoxHighlight
+local ruleDisplayHeader, ruleDisplayIcon, ruleSelectorAddBoxHighlight, ruleSelectorScrollView
 
 ---@table<Context, Frame>
 local yoinkedDisplayContainers = {}
@@ -66,28 +67,69 @@ local function CreateBorderedIcon(parent, size, texture)
     return baseIcon
 end
 
-local function DisplayRule(itemID)
+local function DisplayRule()
+
+    local itemID = currentDisplayedID
     Yoinked:DebugPrint("UI", 6, "Displaying rule for " .. itemID)
 
-    currentDisplayedID = itemID
-
-    if itemID and C_Item.GetItemInfoInstant(itemID) then
-        for context in pairs(YOINKED_CONTEXTS) do
-            yoinkedDisplayContainers[context].SetRuleContents(Yoinked:GetRule(context, itemID))
-        end
+    for context in pairs(YOINKED_CONTEXTS) do
+        yoinkedDisplayContainers[context].SetRuleContents(Yoinked:GetRule(context, itemID))
     end
 
-    if ruleDisplayHeader then
+    if not ruleDisplayHeader then return end
+
+    if itemID and itemID > 0 then
         local item = Item:CreateFromItemID(itemID)
+    
         item:ContinueOnItemLoad(function()
 
             ruleDisplayHeader:SetText(item:GetItemName())
             ruleDisplayIcon.tex:SetTexture(item:GetItemIcon())
         end)
+    else 
+        ruleDisplayHeader:SetText("Select a Rule")
+        ruleDisplayIcon.tex:SetTexture("")
     end
 
 end
 
+local function RefreshRuleSelector()
+    
+    local dataProvider = CreateDataProvider()
+    ruleSelectorScrollView:SetDataProvider(dataProvider)
+    
+    for i, v in pairs(Yoinked:ConstructRuleset()) do
+
+        if C_Item.DoesItemExistByID(i) then
+            local item = Item:CreateFromItemID(i)
+
+            item:ContinueOnItemLoad(function()
+
+                local myData = {
+                    itemID = item:GetItemID(),
+                    textureID = item:GetItemIcon(),
+                    buttonText = item:GetItemName()
+                }
+
+                local searchExists = not(searchFilterText == nil or searchFilterText == "")
+                local itemIDMatch = false
+                local itemNameMatch = false
+
+                if searchExists then
+                    Yoinked:DebugPrint("UI", 8, "Searching for: " .. searchFilterText)
+                    itemIDMatch = string.find(tostring(item:GetItemID()):lower(), searchFilterText:lower(), 1, true) and true or false
+                    itemNameMatch = string.find(item:GetItemName():lower(), searchFilterText:lower(), 1, true) and true or false
+                end
+                Yoinked:DebugPrint("UI", 8, "Item filtered: " .. item:GetItemID() .. ", " .. item:GetItemName() .. ", search string: " .. (searchFilterText and searchFilterText or "empty") .. ", id match: " .. tostring(itemIDMatch) .. ", name match: " .. tostring(itemNameMatch) .. ". Inserting? " .. tostring((not searchExists) or itemIDMatch or itemNameMatch))
+                if (not searchExists) or itemIDMatch or itemNameMatch then dataProvider:Insert(myData) end
+
+            end)
+
+        end
+
+    end
+
+end
 local function CreateRuleSelector()
 
     local ruleSelectorContainer = CreateFrame("Frame", "YoinkedRuleSelectorContainer", newConfigFrame, "InsetFrameTemplate3")
@@ -99,8 +141,13 @@ local function CreateRuleSelector()
     ruleSelectorSearchBox:SetPoint("BOTTOMLEFT", ruleSelectorContainer, "TOPLEFT", 6, 5)
     ruleSelectorSearchBox:SetSize(293, 20)
     ruleSelectorSearchBox:SetAutoFocus(false)
-    ruleSelectorSearchBox:SetScript("OnTextChanged", function() end)
-    SetTooltip(ruleSelectorSearchBox, "NYI, but will allow you to search the rules you have added a little easier")
+    ruleSelectorSearchBox:SetScript("OnTextChanged", function()
+        Yoinked:DebugPrint("UI", 8, "Search text changed: " .. ruleSelectorSearchBox:GetText())
+        searchFilterText = ruleSelectorSearchBox:GetText()
+        RefreshRuleSelector()
+    end)
+    ruleSelectorSearchBox:SetText("")
+    SetTooltip(ruleSelectorSearchBox, "Search the rules you have added a little easier. Can search item name or ID")
 
     local ruleSelectorScrollBox = CreateFrame("Frame", nil, ruleSelectorContainer, "WowScrollBoxList")
     ruleSelectorScrollBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 3, -48)
@@ -111,7 +158,7 @@ local function CreateRuleSelector()
     ruleSelectorScrollBar:SetPoint("BOTTOMRIGHT", ruleSelectorContainer, "BOTTOMRIGHT", -8, 6)
 
     local ruleSelectorDataProvider = CreateDataProvider()
-    local ruleSelectorScrollView = CreateScrollBoxListLinearView()
+    ruleSelectorScrollView = CreateScrollBoxListLinearView()
     ruleSelectorScrollView:SetDataProvider(ruleSelectorDataProvider)
 
     ScrollUtil.InitScrollBoxListWithScrollBar(ruleSelectorScrollBox, ruleSelectorScrollBar, ruleSelectorScrollView)
@@ -121,35 +168,23 @@ local function CreateRuleSelector()
     ruleSelectorAddBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 0, -3)
     ruleSelectorAddBox:SetSize(300, 45)
     ruleSelectorAddBox.ItemIcon:SetTexture(135769)
-    ruleSelectorAddBox:SetScript("OnClick", function() 
+    ruleSelectorAddBox.ItemIcon:SetPoint("CENTER", ruleSelectorAddBox, "CENTER", 0, 0)
+    ruleSelectorAddBox:SetScript("OnMouseUp", function() 
         if CursorHasItem() then
             local infoType, itemID, _ = GetCursorInfo()
             Yoinked:DebugPrint("UI", 6, "Adding rule for " .. itemID)
             if infoType ~= "item" then return end
             Yoinked:DebugPrint("UI", 8, "Confirmed item: " .. itemID)
-            if not itemID or not C_Item.GetItemInfo(itemID) or Yoinked:GetRuleExists(itemID) then
-                Yoinked:DebugPrint("UI", 6, "Item rule already exists")
+            if not itemID or not C_Item.GetItemInfo(itemID) then
+                Yoinked:DebugPrint("UI", 6, "Item is not a valid item")
                 return
             end
-            for context, _ in YOINKED_CONTEXTS do
+            for context, _ in pairs(YOINKED_CONTEXTS) do
                 Yoinked:DebugPrint("UI", 8, "Adding rule for " .. itemID .. " in context " .. context)
-                Yoinked:SetRule(context, itemID, 20, 20, 10, true)
+                Yoinked:SetRule(context, itemID, 0, 0, 10, true, true, false)
             end
 
-            Yoinked:DebugPrint("UI", 6, "Creating item and awaiting async load")
-            local item = Item:CreateFromItemID(itemID)
-
-            item:ContinueOnItemLoad(function()
-                Yoinked:DebugPrint("UI", 6, itemID .. " async load complete")
-                local myData = {
-                    itemID = item:GetItemID(),
-                    textureID = item:GetItemIcon(),
-                    buttonText = item:GetItemName()
-                }
-                Yoinked:DebugPrint("UI", 6, itemID .. " inserting into data provider")
-                ruleSelectorDataProvider:Insert(myData)
-
-            end)
+            RefreshRuleSelector()
 
         end
 
@@ -172,31 +207,13 @@ local function CreateRuleSelector()
         button.ItemIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
         button:SetScript("OnClick", function()
-
-            DisplayRule(data.itemID)
+            currentDisplayedID = data.itemID
+            DisplayRule()
 
         end)
     end)
 
-    for i, v in pairs(Yoinked:GetRuleset()) do
-
-        if C_Item.DoesItemExistByID(i) then
-            local item = Item:CreateFromItemID(i)
-
-            item:ContinueOnItemLoad(function()
-                local myData = {
-                    itemID = item:GetItemID(),
-                    textureID = item:GetItemIcon(),
-                    buttonText = item:GetItemName()
-                }
-
-                ruleSelectorDataProvider:Insert(myData)
-
-            end)
-
-        end
-
-    end
+    RefreshRuleSelector()
 
 end
 
@@ -279,6 +296,22 @@ local function CreateRuleDisplay()
     ruleDisplayIcon = CreateBorderedIcon(ruleDisplayHeader, 30, "")
     ruleDisplayIcon:SetPoint("RIGHT", ruleDisplayHeader, "LEFT", -18, 0)
     SetTooltip(ruleDisplayHeader, "The current icon you have selected, and are viewing the rules of below")
+
+    local ruleDisplayDeleteButton = Sushi.RedButton(ruleDisplayContainer, "Delete")
+    SetTooltip(ruleDisplayDeleteButton, "Delete the currently selected rule")
+    ruleDisplayDeleteButton:SetWidth(100)
+    ruleDisplayDeleteButton:SetHeight(20)
+    ruleDisplayDeleteButton:SetPoint("LEFT", ruleDisplayHeader, "RIGHT", 0, 0)
+    ruleDisplayDeleteButton:SetScript("OnClick", function(self)
+
+        if currentDisplayedID and currentDisplayedID > 0 then
+            Yoinked:DeleteRule(currentDisplayedID)
+            currentDisplayedID = 0
+            RefreshRuleSelector()
+            DisplayRule()
+        end
+    end)
+
     ---@param context Context
     local function createDisplayContainer(context)
 
@@ -383,7 +416,9 @@ local function CreateRuleDisplay()
             ruleAmountEditbox:SetShown(amountEnabled)
             rulePrioritySlider:SetEnabled(interactEnabled)
             ruleAmountEnabledCheckbox:SetEnabled(interactEnabled)
+            ruleAmountEnabledCheckbox:SetChecked(amountEnabled)
             ruleCapEnabledCheckbox:SetEnabled(interactEnabled)
+            ruleCapEnabledCheckbox:SetChecked(capEnabled)
 
             left1.tex:SetDesaturated(not interactEnabled)
             left2.tex:SetDesaturated(not interactEnabled)
@@ -423,18 +458,20 @@ local function CreateRuleDisplay()
             local currentID = currentDisplayedID
             ruleEnabledCheckbox:SetText(checked and "Enabled" or "Disabled")
             ruleEnabledCheckbox:SetWidth(90)
-            Yoinked:SetRuleAmountEnabled(context, currentID, checked)
+            Yoinked:SetRuleEnabled(context, currentID, checked)
             updateContextState()
         end)
         SetTooltip(ruleEnabledCheckbox, "Enable or disable this rule pulling items from your bank.")
 
-        ruleDisplayContextContainer.SetRuleContents = function(bagAmount, bagCap, priority, enabled)
+        ruleDisplayContextContainer.SetRuleContents = function(bagAmount, bagCap, priority, enabled, bagAmountEnabled, bagCapEnabled)
             ruleCapEditbox:SetValue(bagCap and bagCap or 0)
             ruleAmountEditbox:SetValue(bagAmount and bagAmount or 0)
             ruleEnabledCheckbox:SetValue(enabled and true or false)
             ruleEnabledCheckbox:SetText(enabled and "Enabled" or "Disabled")
             ruleEnabledCheckbox:SetWidth(90)
             rulePrioritySlider:SetValue(priority and priority or 1)
+            ruleAmountEnabledCheckbox:SetValue(bagAmountEnabled and true or false)
+            ruleCapEnabledCheckbox:SetValue(bagCapEnabled and true or false)
 
             updateContextState()
         end

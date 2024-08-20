@@ -47,8 +47,6 @@ local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 local bankTicker
----@type table<number, Rule>
-local yoinkedAssembledRules
 
 ---@type table<number, table<number, {itemID: number, itemCount: number}>>
 local containerCache = {}
@@ -93,7 +91,7 @@ function Yoinked:OnInitialize()
     self.optionsFrame = AceConfigDialog:AddToBlizOptions("Yoinked", "Yoinked")
 
     self:RegisterChatCommand("Yoinked", "ChatCommand")
-    self:ConstructRules()
+    self:ConstructRuleset()
 
     YOINKED_CONTEXTS.profile.tooltipString = "These rules will be applied to every character with the " .. Yoinked:GetConfigProfileName() .. " profile"
     YOINKED_CONTEXTS.profile.contextString = "when the " .. Yoinked:GetConfigProfileName() .. " profile is active."
@@ -104,10 +102,6 @@ function Yoinked:OnEnable()
     self:RegisterEvent("BANKFRAME_OPENED", "OnBankFrameOpened")
     self:RegisterEvent("BANKFRAME_CLOSED", "OnBankFrameClosed")
     Yoinked:RegisterEvent("CURSOR_CHANGED", "OnCursorChanged")
-end
-
-function Yoinked:ConstructRules()
-    yoinkedAssembledRules = Yoinked:ConstructRuleset()
 end
 
 function Yoinked:OnBankFrameOpened()
@@ -150,9 +144,6 @@ function Yoinked:OnBankFrameOpened()
     self:UpdateCacheItems(containersBank)
     self:UpdateCacheItems(containersBag)
 
-    --#TODO: add dirty flag to save updating rules
-    self:ConstructRules()
-
     local speed = Yoinked:GetConfigSpeed()
     if not speed or type(speed) ~= "number" then speed = 1 end
     if not bankTicker then
@@ -182,7 +173,7 @@ end
 
 function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
 
-    for itemID, rule in pairs(yoinkedAssembledRules) do
+    for itemID, rule in pairs(Yoinked:ConstructRuleset()) do
         if rule.enabled then
 
             self:DebugPrint("BankEvent", 10, "Checking " .. itemID .. ": " .. rule.bagAmount)

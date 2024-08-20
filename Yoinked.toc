@@ -2,7 +2,7 @@
 ## Title: Yoinked
 ## Notes: Quickly restock supplies or consumables
 ## Author: JackSprat47
-## Version: 0.1.3
+## Version: 0.2.0
 ## RequiredDeps:
 ## X-Curse-Project-ID: 1082297
 ## SavedVariables: YoinkedDB
@@ -22,7 +22,6 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 
 Libs\Poncho-2.0\Poncho-2.0.xml
 Libs\Sushi-3.2\Sushi-3.2.xml
-
 
 Yoinked.lua
 Database\YoinkedDB.lua

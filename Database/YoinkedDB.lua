@@ -1,4 +1,6 @@
 local db
+local assembledRules = {}
+local assembledRulesDirtyFlag = true
 
 local defaults = {
     profile = {
@@ -24,14 +26,17 @@ local defaults = {
         configHeight = 0,
         --#TODO: Plan whether rules should be per profile, even if global
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false}
+            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
         }
     },
     global = {
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false},
+            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false},
             [207023] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false},
             [191383] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false}
+        },
+        deletedItems = {
+
         },
         --#TODO: Implement warbank saved data structure
         --#TODO: Implement guild bank saved data structure
@@ -45,13 +50,13 @@ local defaults = {
         globalEnabled = true,
         profileEnabled = true,
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false}
+            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
         }
         --#TODO: Implement character bank saved data structure
     },
     class = {
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false}
+            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
         }
     }
 }
@@ -75,7 +80,7 @@ end
 ---@return boolean amountEnabled
 ---@return boolean capEnabled
 function Yoinked:GetRule(context, itemID)
-    if (not db[context]) or (not db[context].rules) or (not db[context].rules[itemID]) then return 0, 0, 1, false, false, false end
+    if db.global.deletedItems[itemID] then return 0, 0, 1, false, false, false end
     local rule = db[context].rules[itemID]
     return rule.bagAmount, rule.bagCap, rule.priority, rule.enabled, rule.amountEnabled, rule.capEnabled
 end
@@ -83,13 +88,9 @@ end
 ---@param itemID number
 ---@return boolean
 function Yoinked:GetRuleExists(itemID)
-    return db.global.rules[itemID] ~= nil
+    return not db.global.deletedItems[itemID] and db.global.rules[itemID] ~= nil
 end
 
-function Yoinked:GetAllRules(context)
-    if (not db[context]) or (not db[context].rules) then return {} end
-    return db[context].rules
-end
 
 ---@param context Context
 ---@param itemID number
@@ -102,6 +103,7 @@ end
 ---@return boolean success
 function Yoinked:SetRule(context, itemID, bagAmount, bagCap, priority, enabled, amountEnabled, capEnabled)
     if not db[context] then return false end
+    if db.global.deletedItems then db.global.deletedItems[itemID] = nil end
     local success = true
     success = success and self:SetRuleBagAmount(context, itemID, bagAmount)
     success = success and self:SetRuleBagCap(context, itemID, bagCap)
@@ -109,6 +111,7 @@ function Yoinked:SetRule(context, itemID, bagAmount, bagCap, priority, enabled, 
     success = success and self:SetRuleEnabled(context, itemID, enabled)
     success = success and self:SetRuleAmountEnabled(context, itemID, amountEnabled)
     success = success and self:SetRuleCapEnabled(context, itemID, capEnabled)
+    assembledRulesDirtyFlag = true
     return success
 end
 
@@ -119,8 +122,8 @@ end
 function Yoinked:SetRuleBagAmount(context, itemID, bagAmount)
     local value = tonumber(bagAmount)
     if not db[context] or not value then return false end
-    if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = value, bagCap = 20, priority = 1, enabled = false, amountEnabled = false, capEnabled = false} end
     db[context].rules[itemID].bagAmount = value
+    assembledRulesDirtyFlag = true
     return true
 end
 
@@ -131,8 +134,8 @@ end
 function Yoinked:SetRuleBagCap(context, itemID, bagCap)
     local value = tonumber(bagCap)
     if not db[context] or not value then return false end
-    if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = value, priority = 1, enabled = false, amountEnabled = false, capEnabled = false} end
     db[context].rules[itemID].bagCap = value
+    assembledRulesDirtyFlag = true
     return true
 end
 
@@ -143,8 +146,8 @@ end
 function Yoinked:SetRulePriority(context, itemID, priority)
     local value = tonumber(priority)
     if not db[context] or not value or value < 1 or value > 10 then return false end
-    if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = 20, priority = value, enabled = false, amountEnabled = false, capEnabled = false} end
     db[context].rules[itemID].priority = value
+    assembledRulesDirtyFlag = true
     return true
 end
 
@@ -154,8 +157,8 @@ end
 ---@return boolean
 function Yoinked:SetRuleEnabled(context, itemID, enabled)
     if not db[context] then return false end
-    if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = 20, priority = 1, enabled = enabled, amountEnabled = false, capEnabled = false} end
     db[context].rules[itemID].enabled = enabled
+    assembledRulesDirtyFlag = true
     return true
 end
 
@@ -165,8 +168,8 @@ end
 ---@return boolean
 function Yoinked:SetRuleAmountEnabled(context, itemID, enabled)
     if not db[context] then return false end
-    if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = 20, priority = 1, enabled = false, amountEnabled = enabled, capEnabled = false} end
     db[context].rules[itemID].amountEnabled = enabled
+    assembledRulesDirtyFlag = true
     return true
 end
 
@@ -178,34 +181,41 @@ function Yoinked:SetRuleCapEnabled(context, itemID, enabled)
     if not db[context] then return false end
     if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = 20, priority = 1, enabled = false, amountEnabled = false, capEnabled = enabled} end
     db[context].rules[itemID].capEnabled = enabled
+    assembledRulesDirtyFlag = true
     return true
 end
 
-local assembledRules = {}
+function Yoinked:DeleteRule(itemID)
+    db.global.rules[itemID] = nil
+    db.class.rules[itemID] = nil
+    db.profile.rules[itemID] = nil
+    db.char.rules[itemID] = nil
+    db.global.deletedItems[itemID] = true
+    assembledRules[itemID] = nil
+    assembledRulesDirtyFlag = true
+end
+
+
 ---@return table<number, Rule>
 function Yoinked:ConstructRuleset()
-
-    for context in pairs(YOINKED_CONTEXTS) do
-
-        if self:GetContextEnabled(context) then
-            for itemID, rule in pairs(db[context].rules) do
-                if assembledRules[itemID] then
-                    if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
-                else
-                    assembledRules[itemID] = rule
+    if assembledRulesDirtyFlag then
+        for context in pairs(YOINKED_CONTEXTS) do
+            if self:GetContextEnabled(context) then 
+                for itemID, rule in pairs(db[context].rules) do
+                    if not db.global.deletedItems[itemID] then
+                    if assembledRules[itemID] then
+                        if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
+                    else
+                        assembledRules[itemID] = rule
+                    end
+                end
                 end
             end
         end
     end
+    assembledRulesDirtyFlag = false
     return assembledRules
 end
-
----@return table<number, Rule>
-function Yoinked:GetRuleset()
-    if #assembledRules > 0 then return assembledRules else return Yoinked:ConstructRuleset() end
-end
-
-
 
 ---@param context Context
 ---@return boolean
@@ -219,6 +229,7 @@ end
 function Yoinked:SetContextEnabled(context, enabled)
     if not db.char then db.char = {} end
     db.char[context .. "Enabled"] = enabled
+    assembledRulesDirtyFlag = true
 end
 
 ---@return boolean
