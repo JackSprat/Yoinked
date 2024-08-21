@@ -323,6 +323,7 @@ local function CreateRuleDisplay()
         local containerHeight = ruleDisplayContainer:GetHeight() - 6
         local step = containerHeight / 4
 
+        ---@type table
         local ruleDisplayContextContainer = CreateFrame("Frame", headerString, ruleDisplayContainer,
             "YoinkedRuleDisplayTemplate")
         ruleDisplayContextContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(contextID - 1) * step - 3)

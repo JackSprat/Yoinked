@@ -190,14 +190,13 @@ function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound
     for itemID, rule in pairs(Yoinked:ConstructRuleset()) do
         if rule.enabled then
             self:DebugPrint("BankEvent", 10, "Checking " .. itemID .. ": " .. rule.bagAmount)
-            ---@diagnostic disable-next-line: redundant-parameter
-            local bagCount = C_Item.GetItemCount(itemID, false, false, false, false)
+
+            local bagCount = C_Item.GetItemCount(itemID, false, false, false, false) ---@diagnostic disable-line: redundant-parameter
 
             if bagCount < rule.bagAmount and rule.amountEnabled then
                 local needed = rule.bagAmount - bagCount
-                ---@diagnostic disable-next-line: redundant-parameter
                 local bagAndBankCount = C_Item.GetItemCount(itemID, Yoinked:GetConfigBankEnabled(), false,
-                    Yoinked:GetConfigReagentBankEnabled(), Yoinked:GetConfigWarbankEnabled())
+                    Yoinked:GetConfigReagentBankEnabled(), Yoinked:GetConfigWarbankEnabled()) ---@diagnostic disable-line: redundant-parameter
                 self:DebugPrint("BankEvent", 10,
                     "Verify Bag Count (" ..
                     bagCount ..
