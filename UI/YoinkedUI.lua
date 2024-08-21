@@ -1,7 +1,5 @@
-local AceGUI = LibStub("AceGUI-3.0")
 local Sushi = LibStub('Sushi-3.2')
 
-local configFrame
 local newConfigFrame
 local currentDisplayedID = 0
 local searchFilterText
@@ -14,6 +12,8 @@ local yoinkedDisplayContainers = {}
 local tooltipFrame
 local helpMode = false
 
+---@param frameInput {}|Frame
+---@param text string
 local function SetTooltip(frameInput, text)
     if frameInput.SetCall then
         frameInput:SetCall('OnEnter', function()
@@ -49,6 +49,10 @@ function Yoinked:OnCursorChanged()
     end
 end
 
+---@param parent Frame
+---@param size number
+---@param texture string|number
+---@return table|Frame
 local function CreateBorderedIcon(parent, size, texture)
     local baseIcon = CreateFrame("Frame", nil, parent)
     baseIcon.tex = baseIcon:CreateTexture()

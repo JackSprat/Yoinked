@@ -24,7 +24,6 @@ local defaults = {
         configY = 0,
         configWidth = 0,
         configHeight = 0,
-        --#TODO: Plan whether rules should be per profile, even if global
         rules = {
             ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
         }
@@ -66,7 +65,7 @@ function Yoinked:InitialiseDatabase()
     db = LibStub("AceDB-3.0"):New("YoinkedDB", defaults, true)
 end
 
----@return string
+---@return string profile
 function Yoinked:GetConfigProfileName()
     return db:GetCurrentProfile()
 end
@@ -86,7 +85,7 @@ function Yoinked:GetRule(context, itemID)
 end
 
 ---@param itemID number
----@return boolean
+---@return boolean exists
 function Yoinked:GetRuleExists(itemID)
     return not db.global.deletedItems[itemID] and db.global.rules[itemID] ~= nil
 end
@@ -118,7 +117,7 @@ end
 ---@param context Context
 ---@param itemID number
 ---@param bagAmount number
----@return boolean
+---@return boolean success
 function Yoinked:SetRuleBagAmount(context, itemID, bagAmount)
     local value = tonumber(bagAmount)
     if not db[context] or not value then return false end
@@ -130,7 +129,7 @@ end
 ---@param context Context
 ---@param itemID number
 ---@param bagCap number
----@return boolean
+---@return boolean success
 function Yoinked:SetRuleBagCap(context, itemID, bagCap)
     local value = tonumber(bagCap)
     if not db[context] or not value then return false end
@@ -142,7 +141,7 @@ end
 ---@param context Context
 ---@param itemID number
 ---@param priority number
----@return boolean
+---@return boolean success
 function Yoinked:SetRulePriority(context, itemID, priority)
     local value = tonumber(priority)
     if not db[context] or not value or value < 1 or value > 10 then return false end
@@ -154,7 +153,7 @@ end
 ---@param context Context
 ---@param itemID number
 ---@param enabled boolean
----@return boolean
+---@return boolean success
 function Yoinked:SetRuleEnabled(context, itemID, enabled)
     if not db[context] then return false end
     db[context].rules[itemID].enabled = enabled
@@ -165,7 +164,7 @@ end
 ---@param context Context
 ---@param itemID number
 ---@param enabled boolean
----@return boolean
+---@return boolean success
 function Yoinked:SetRuleAmountEnabled(context, itemID, enabled)
     if not db[context] then return false end
     db[context].rules[itemID].amountEnabled = enabled
@@ -176,7 +175,7 @@ end
 ---@param context Context
 ---@param itemID number
 ---@param enabled boolean
----@return boolean
+---@return boolean success
 function Yoinked:SetRuleCapEnabled(context, itemID, enabled)
     if not db[context] then return false end
     if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = 20, priority = 1, enabled = false, amountEnabled = false, capEnabled = enabled} end
@@ -185,6 +184,7 @@ function Yoinked:SetRuleCapEnabled(context, itemID, enabled)
     return true
 end
 
+---@param itemID number
 function Yoinked:DeleteRule(itemID)
     db.global.rules[itemID] = nil
     db.class.rules[itemID] = nil
@@ -218,7 +218,7 @@ function Yoinked:ConstructRuleset()
 end
 
 ---@param context Context
----@return boolean
+---@return boolean contextEnabled
 function Yoinked:GetContextEnabled(context)
     if (not db.char) or (not db.char[context .. "Enabled"]) then return false end
     return db.char[context .. "Enabled"]
@@ -232,9 +232,8 @@ function Yoinked:SetContextEnabled(context, enabled)
     assembledRulesDirtyFlag = true
 end
 
----@return boolean
+---@return boolean debugEnabled
 function Yoinked:GetConfigDebugEnabled()
-    if true then return true end
     return db.profile.debug
 end
 
@@ -243,7 +242,7 @@ function Yoinked:SetConfigDebugEnabled(enabled)
     db.profile.debug = enabled
 end
 
----@return boolean
+---@return boolean bankEnabled
 function Yoinked:GetConfigBankEnabled()
     return db.profile.bank
 end
@@ -253,7 +252,7 @@ function Yoinked:SetConfigBankEnabled(enabled)
     db.profile.bank = enabled
 end
 
----@return boolean
+---@return boolean warbankEnabled
 function Yoinked:GetConfigWarbankEnabled()
     return db.profile.warbank
 end
@@ -263,7 +262,7 @@ function Yoinked:SetConfigWarbankEnabled(enabled)
     db.profile.warbank = enabled
 end
 
----@return boolean
+---@return boolean reagentBankEnabled
 function Yoinked:GetConfigReagentBankEnabled()
     return db.profile.reagentbank
 end
@@ -273,7 +272,7 @@ function Yoinked:SetConfigReagentBankEnabled(enabled)
     db.profile.reagentbank = enabled
 end
 
----@return number
+---@return number speed
 function Yoinked:GetConfigSpeed()
     return db.profile.yoinkSpeed
 end
@@ -283,7 +282,7 @@ function Yoinked:SetConfigSpeed(speed)
     db.profile.yoinkSpeed = speed
 end
 
----@return boolean
+---@return boolean guildBankEnabled
 function Yoinked:GetConfigGuildBankEnabled()
     --TODO implement guild bank
     return false
@@ -294,7 +293,7 @@ function Yoinked:SetConfigGuildBankEnabled(enabled)
     --TODO implement guild bank
 end
 
----@return boolean
+---@return boolean reagentBagEnabled
 function Yoinked:GetConfigReagentBagEnabled()
     return db.profile.reagentbag
 end
@@ -304,7 +303,7 @@ function Yoinked:SetConfigReagentBagEnabled(enabled)
     db.profile.reagentbag = enabled
 end
 
----@return boolean
+---@return boolean warbankPreferenceEnabled
 function Yoinked:GetConfigWarbankPreferenceEnabled()
     --TODO implement guild bank
     return false

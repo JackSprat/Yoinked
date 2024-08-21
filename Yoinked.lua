@@ -58,7 +58,7 @@ function Yoinked:UpdateCacheItems(containers)
         if not containerCache[containerID] then containerCache[containerID] = {} end
         for containerSlot = 1, C_Container.GetContainerNumSlots(containerID) do
             local slot = C_Container.GetContainerItemInfo(containerID, containerSlot)
-            if slot then 
+            if slot then
                 containerCache[containerID][containerSlot] = {itemID = C_Container.GetContainerItemInfo(containerID, containerSlot).itemID, itemCount = C_Container.GetContainerItemInfo(containerID, containerSlot).stackCount}
             else
                 containerCache[containerID][containerSlot] = {itemID = 0, itemCount = 0}
@@ -84,9 +84,11 @@ function Yoinked:DebugPrint(category, verbosity, ...)
 	end
 end
 
+
+---@diagnostic disable-next-line: duplicate-set-field
 function Yoinked:OnInitialize()
     --#TODO: Add minimap icon
-    Yoinked:InitialiseDatabase()
+    self:InitialiseDatabase()
     AceConfig:RegisterOptionsTable("Yoinked", self:GetOptions())
     self.optionsFrame = AceConfigDialog:AddToBlizOptions("Yoinked", "Yoinked")
 
@@ -98,10 +100,18 @@ function Yoinked:OnInitialize()
     YOINKED_CONTEXTS.profile.descriptionString = Yoinked:GetConfigProfileName()
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
 function Yoinked:OnEnable()
     self:RegisterEvent("BANKFRAME_OPENED", "OnBankFrameOpened")
     self:RegisterEvent("BANKFRAME_CLOSED", "OnBankFrameClosed")
-    Yoinked:RegisterEvent("CURSOR_CHANGED", "OnCursorChanged")
+    self:RegisterEvent("CURSOR_CHANGED", "OnCursorChanged")
+end
+
+---@diagnostic disable-next-line: duplicate-set-field
+function Yoinked:OnDisable()
+    self:UnregisterEvent("BANKFRAME_OPENED")
+    self:UnregisterEvent("BANKFRAME_CLOSED")
+    self:UnregisterEvent("CURSOR_CHANGED")
 end
 
 function Yoinked:OnBankFrameOpened()
@@ -109,6 +119,7 @@ function Yoinked:OnBankFrameOpened()
     local containersBank = {}
     local containersBag = {}
     local containersSoulbound = {}
+
     --initialise enabled soulbound only containers for use as soulbound item
     if Yoinked:GetConfigBankEnabled() then
         table.insert(containersSoulbound, BANK_CONTAINER)
@@ -118,7 +129,7 @@ function Yoinked:OnBankFrameOpened()
             table.insert(containersSoulbound, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
             table.insert(containersBank, BACKPACK_CONTAINER + ITEM_INVENTORY_BANK_BAG_OFFSET + i)
         end
-        
+
     end
 
     if Yoinked:GetConfigReagentBankEnabled() then
@@ -171,17 +182,23 @@ function Yoinked:OnBankFrameClosed()
 
 end
 
+---@param containersBank table<number, number>
+---@param containersBag table<number, number>
+---@param containersSoulbound table<number, number>
+---@return boolean succeeded
 function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
 
     for itemID, rule in pairs(Yoinked:ConstructRuleset()) do
         if rule.enabled then
 
             self:DebugPrint("BankEvent", 10, "Checking " .. itemID .. ": " .. rule.bagAmount)
+            ---@diagnostic disable-next-line: redundant-parameter
             local bagCount = C_Item.GetItemCount(itemID, false, false, false, false)
 
             if bagCount < rule.bagAmount and rule.amountEnabled then
 
                 local needed = rule.bagAmount - bagCount
+                ---@diagnostic disable-next-line: redundant-parameter
                 local bagAndBankCount = C_Item.GetItemCount(itemID, Yoinked:GetConfigBankEnabled(), false, Yoinked:GetConfigReagentBankEnabled(), Yoinked:GetConfigWarbankEnabled())
                 self:DebugPrint("BankEvent", 10, "Verify Bag Count (" .. bagCount .. ") < Bag + Bank Count (" .. bagAndBankCount .. "): " .. tostring(bagAndBankCount > bagCount))
                 if bagAndBankCount > bagCount then
@@ -213,6 +230,12 @@ function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound
 
 end
 
+---@param itemID number
+---@param requestedAmount number
+---@param containerIDsFrom table<number, number>
+---@param containerIDsTo table<number, number>
+---@param containerIDsToSoulbound table<number, number>|nil
+---@return "succeeded"|"nospace"|"noitems"
 function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, containerIDsTo, containerIDsToSoulbound)
 
     self:DebugPrint("BankEvent", 6, "Withdrawing " .. itemID .. ": " .. requestedAmount)
@@ -225,7 +248,6 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
 
                 local foundAmount = C_Container.GetContainerItemInfo(containerIDFrom, containerSlotFrom)["stackCount"]
                 local isSoulbound = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(containerIDFrom, containerSlotFrom))
-
                 local containerIDsToFiltered = (containerIDsToSoulbound and isSoulbound) and containerIDsToSoulbound or containerIDsTo
 
                 local containerIDTo, containerSlotTo, containerSlotToCapacity = self:FindEmptyOrUnfilledSlot(itemID, containerIDsToFiltered)
@@ -255,6 +277,8 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
     return "noitems"
 end
 
+---@param containersToSearch table<number, number>
+---@return number|nil, number|nil, number|nil
 function Yoinked:FindEmptySlot(containersToSearch)
     for _, bagIndex in pairs(containersToSearch) do
         for slotIndex = 1, C_Container.GetContainerNumSlots(bagIndex) do
@@ -266,6 +290,8 @@ function Yoinked:FindEmptySlot(containersToSearch)
     return nil, nil
 end
 
+---@param itemToFind number
+---@param containersToSearch table<number, number>
 function Yoinked:FindEmptyOrUnfilledSlot(itemToFind, containersToSearch)
     local maxStack = select(8, C_Item.GetItemInfo(itemToFind))
     self:DebugPrint("BankEvent", 6, "finding empty or unfilled for " .. itemToFind)
@@ -289,10 +315,12 @@ function Yoinked:FindEmptyOrUnfilledSlot(itemToFind, containersToSearch)
     return bagIndex, slotIndex, maxStack
 end
 
+---@param input string arguments to the slash command
 function Yoinked:ChatCommand(input)
     self:CreateUIFrame()
 end
 
+---@return table options 
 function Yoinked:GetOptions()
 
     local options = {
