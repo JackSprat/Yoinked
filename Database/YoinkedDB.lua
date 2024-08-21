@@ -25,14 +25,14 @@ local defaults = {
         configWidth = 0,
         configHeight = 0,
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false }
         }
     },
     global = {
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false},
-            [207023] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false},
-            [191383] = {bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false}
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false },
+            [207023] = { bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false },
+            [191383] = { bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false }
         },
         deletedItems = {
 
@@ -40,7 +40,7 @@ local defaults = {
         --#TODO: Implement warbank saved data structure
         --#TODO: Implement guild bank saved data structure
         warbankSaved = {
-            
+
         }
     },
     char = {
@@ -49,13 +49,13 @@ local defaults = {
         globalEnabled = true,
         profileEnabled = true,
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false }
         }
         --#TODO: Implement character bank saved data structure
     },
     class = {
         rules = {
-            ['**'] = {bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false}
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false }
         }
     }
 }
@@ -89,7 +89,6 @@ end
 function Yoinked:GetRuleExists(itemID)
     return not db.global.deletedItems[itemID] and db.global.rules[itemID] ~= nil
 end
-
 
 ---@param context Context
 ---@param itemID number
@@ -178,7 +177,17 @@ end
 ---@return boolean success
 function Yoinked:SetRuleCapEnabled(context, itemID, enabled)
     if not db[context] then return false end
-    if not db[context].rules[itemID] then db[context].rules[itemID] = {bagAmount = 20, bagCap = 20, priority = 1, enabled = false, amountEnabled = false, capEnabled = enabled} end
+    if not db[context].rules[itemID] then
+        db[context].rules[itemID] = {
+            bagAmount = 20,
+            bagCap = 20,
+            priority = 1,
+            enabled = false,
+            amountEnabled = false,
+            capEnabled =
+                enabled
+        }
+    end
     db[context].rules[itemID].capEnabled = enabled
     assembledRulesDirtyFlag = true
     return true
@@ -195,20 +204,19 @@ function Yoinked:DeleteRule(itemID)
     assembledRulesDirtyFlag = true
 end
 
-
 ---@return table<number, Rule>
 function Yoinked:ConstructRuleset()
     if assembledRulesDirtyFlag then
         for context in pairs(YOINKED_CONTEXTS) do
-            if self:GetContextEnabled(context) then 
+            if self:GetContextEnabled(context) then
                 for itemID, rule in pairs(db[context].rules) do
                     if not db.global.deletedItems[itemID] then
-                    if assembledRules[itemID] then
-                        if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
-                    else
-                        assembledRules[itemID] = rule
+                        if assembledRules[itemID] then
+                            if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
+                        else
+                            assembledRules[itemID] = rule
+                        end
                     end
-                end
                 end
             end
         end

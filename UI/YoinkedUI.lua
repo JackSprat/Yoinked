@@ -12,21 +12,12 @@ local yoinkedDisplayContainers = {}
 local tooltipFrame
 local helpMode = false
 
+
 ---@param frameInput {}|Frame
 ---@param text string
 local function SetTooltip(frameInput, text)
     if frameInput.SetCall then
-        frameInput:SetCall('OnEnter', function()
-            if helpMode then 
-                tooltipFrame:ClearAllPoints()
-                tooltipFrame:Show()
-                tooltipFrame:SetPoint('BOTTOM', frameInput, 'TOP', 0, 30)
-                tooltipFrame:SetText(text)
-            end
-        end)
-        frameInput:SetCall('OnLeave', function() tooltipFrame:Hide() end)
-    else 
-        frameInput:SetScript('OnEnter', function()
+        frameInput:SetCall('OnEnter', function ()
             if helpMode then
                 tooltipFrame:ClearAllPoints()
                 tooltipFrame:Show()
@@ -34,8 +25,17 @@ local function SetTooltip(frameInput, text)
                 tooltipFrame:SetText(text)
             end
         end)
-        frameInput:SetScript('OnLeave', function() tooltipFrame:Hide() end)
-
+        frameInput:SetCall('OnLeave', function () tooltipFrame:Hide() end)
+    else
+        frameInput:SetScript('OnEnter', function ()
+            if helpMode then
+                tooltipFrame:ClearAllPoints()
+                tooltipFrame:Show()
+                tooltipFrame:SetPoint('BOTTOM', frameInput, 'TOP', 0, 30)
+                tooltipFrame:SetText(text)
+            end
+        end)
+        frameInput:SetScript('OnLeave', function () tooltipFrame:Hide() end)
     end
 end
 
@@ -63,7 +63,7 @@ local function CreateBorderedIcon(parent, size, texture)
 
     local borderIcon = CreateFrame("Frame", nil, baseIcon)
     borderIcon:SetPoint("CENTER", baseIcon, "CENTER", 0, 0)
-    borderIcon:SetSize(size*(48/30), size*(48/30))
+    borderIcon:SetSize(size * (48 / 30), size * (48 / 30))
     borderIcon.tex = borderIcon:CreateTexture()
     borderIcon.tex:SetAllPoints(borderIcon)
     borderIcon.tex:SetTexture("interface/spellbook/rotationiconframe")
@@ -72,7 +72,6 @@ local function CreateBorderedIcon(parent, size, texture)
 end
 
 local function DisplayRule()
-
     local itemID = currentDisplayedID
     Yoinked:DebugPrint("UI", 6, "Displaying rule for " .. itemID)
 
@@ -84,68 +83,73 @@ local function DisplayRule()
 
     if itemID and itemID > 0 then
         local item = Item:CreateFromItemID(itemID)
-    
-        item:ContinueOnItemLoad(function()
 
+        item:ContinueOnItemLoad(function ()
             ruleDisplayHeader:SetText(item:GetItemName())
             ruleDisplayIcon.tex:SetTexture(item:GetItemIcon())
         end)
-    else 
+    else
         ruleDisplayHeader:SetText("Select a Rule")
         ruleDisplayIcon.tex:SetTexture("")
     end
-
 end
 
 local function RefreshRuleSelector()
-    
     local dataProvider = CreateDataProvider()
     ruleSelectorScrollView:SetDataProvider(dataProvider)
-    
-    for i, v in pairs(Yoinked:ConstructRuleset()) do
 
+    for i, v in pairs(Yoinked:ConstructRuleset()) do
         if C_Item.DoesItemExistByID(i) then
             local item = Item:CreateFromItemID(i)
 
-            item:ContinueOnItemLoad(function()
-
+            item:ContinueOnItemLoad(function ()
                 local myData = {
                     itemID = item:GetItemID(),
                     textureID = item:GetItemIcon(),
                     buttonText = item:GetItemName()
                 }
 
-                local searchExists = not(searchFilterText == nil or searchFilterText == "")
+                local searchExists = not (searchFilterText == nil or searchFilterText == "")
                 local itemIDMatch = false
                 local itemNameMatch = false
 
                 if searchExists then
                     Yoinked:DebugPrint("UI", 8, "Searching for: " .. searchFilterText)
-                    itemIDMatch = string.find(tostring(item:GetItemID()):lower(), searchFilterText:lower(), 1, true) and true or false
-                    itemNameMatch = string.find(item:GetItemName():lower(), searchFilterText:lower(), 1, true) and true or false
+                    itemIDMatch = string.find(tostring(item:GetItemID()):lower(), searchFilterText:lower(), 1, true) and
+                        true or false
+                    itemNameMatch = string.find(item:GetItemName():lower(), searchFilterText:lower(), 1, true) and true or
+                        false
                 end
-                Yoinked:DebugPrint("UI", 8, "Item filtered: " .. item:GetItemID() .. ", " .. item:GetItemName() .. ", search string: " .. (searchFilterText and searchFilterText or "empty") .. ", id match: " .. tostring(itemIDMatch) .. ", name match: " .. tostring(itemNameMatch) .. ". Inserting? " .. tostring((not searchExists) or itemIDMatch or itemNameMatch))
+                Yoinked:DebugPrint("UI", 8,
+                    "Item filtered: " ..
+                    item:GetItemID() ..
+                    ", " ..
+                    item:GetItemName() ..
+                    ", search string: " ..
+                    (searchFilterText and searchFilterText or "empty") ..
+                    ", id match: " ..
+                    tostring(itemIDMatch) ..
+                    ", name match: " ..
+                    tostring(itemNameMatch) ..
+                    ". Inserting? " .. tostring((not searchExists) or itemIDMatch or itemNameMatch))
                 if (not searchExists) or itemIDMatch or itemNameMatch then dataProvider:Insert(myData) end
-
             end)
-
         end
-
     end
-
 end
 local function CreateRuleSelector()
-
-    local ruleSelectorContainer = CreateFrame("Frame", "YoinkedRuleSelectorContainer", newConfigFrame, "InsetFrameTemplate3")
+    local ruleSelectorContainer = CreateFrame("Frame", "YoinkedRuleSelectorContainer", newConfigFrame,
+        "InsetFrameTemplate3")
     ruleSelectorContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 20, -100)
     ruleSelectorContainer:SetWidth(300)
     ruleSelectorContainer:SetPoint("BOTTOM", newConfigFrame, "BOTTOM", 0, 20)
 
-    local ruleSelectorSearchBox = CreateFrame("EditBox", "YoinkedRuleSelectorSearchBox", newConfigFrame, "InputBoxTemplate")
+    local ruleSelectorSearchBox = CreateFrame("EditBox", "YoinkedRuleSelectorSearchBox", newConfigFrame,
+        "InputBoxTemplate")
     ruleSelectorSearchBox:SetPoint("BOTTOMLEFT", ruleSelectorContainer, "TOPLEFT", 6, 5)
     ruleSelectorSearchBox:SetSize(293, 20)
     ruleSelectorSearchBox:SetAutoFocus(false)
-    ruleSelectorSearchBox:SetScript("OnTextChanged", function()
+    ruleSelectorSearchBox:SetScript("OnTextChanged", function ()
         Yoinked:DebugPrint("UI", 8, "Search text changed: " .. ruleSelectorSearchBox:GetText())
         searchFilterText = ruleSelectorSearchBox:GetText()
         RefreshRuleSelector()
@@ -167,13 +171,14 @@ local function CreateRuleSelector()
 
     ScrollUtil.InitScrollBoxListWithScrollBar(ruleSelectorScrollBox, ruleSelectorScrollBar, ruleSelectorScrollView)
 
-    local ruleSelectorAddBox = CreateFrame("Button", "YoinkedRuleSelectorAddBox", ruleSelectorContainer, "YoinkedRuleContainerButtonTemplate")
+    local ruleSelectorAddBox = CreateFrame("Button", "YoinkedRuleSelectorAddBox", ruleSelectorContainer,
+        "YoinkedRuleContainerButtonTemplate")
     SetTooltip(ruleSelectorAddBox, "Drag an item here to add a rule for it")
     ruleSelectorAddBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 0, -3)
     ruleSelectorAddBox:SetSize(300, 45)
     ruleSelectorAddBox.ItemIcon:SetTexture(135769)
     ruleSelectorAddBox.ItemIcon:SetPoint("CENTER", ruleSelectorAddBox, "CENTER", 0, 0)
-    ruleSelectorAddBox:SetScript("OnMouseUp", function() 
+    ruleSelectorAddBox:SetScript("OnMouseUp", function ()
         if CursorHasItem() then
             local infoType, itemID, _ = GetCursorInfo()
             Yoinked:DebugPrint("UI", 6, "Adding rule for " .. itemID)
@@ -189,9 +194,7 @@ local function CreateRuleSelector()
             end
 
             RefreshRuleSelector()
-
         end
-
     end)
 
     ruleSelectorAddBoxHighlight = CreateFrame("Frame", nil, ruleSelectorAddBox)
@@ -204,21 +207,19 @@ local function CreateRuleSelector()
     ruleSelectorAddBoxHighlight:Hide()
 
     ruleSelectorScrollView:SetElementExtent(45)
-    ruleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate",  function (button, data)
+    ruleSelectorScrollView:SetElementInitializer("YoinkedRuleContainerButtonTemplate", function (button, data)
         local buttonText = data.buttonText
         button:SetText(data.itemID .. "\n" .. buttonText)
         button.ItemIcon:SetTexture(data.textureID)
         button.ItemIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
-        button:SetScript("OnClick", function()
+        button:SetScript("OnClick", function ()
             currentDisplayedID = data.itemID
             DisplayRule()
-
         end)
     end)
 
     RefreshRuleSelector()
-
 end
 
 local function CreateBaseUIFrame()
@@ -227,7 +228,7 @@ local function CreateBaseUIFrame()
     local color = CreateColorFromHexString("FF1E1D20")
     local r, g, b = color:GetRGB()
     newConfigFrame.Bg:SetColorTexture(r, g, b, 0.8)
-    newConfigFrame.Bg.colorTexture = {r, g, b, 0.8}
+    newConfigFrame.Bg.colorTexture = { r, g, b, 0.8 }
 
     local text = "Yoinked " --.. Yoinked.version
     YoinkedConfigUITitleText:SetText(text)
@@ -243,10 +244,10 @@ local function CreateBaseUIFrame()
     newConfigFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     YoinkedConfigUIPortrait:SetTexture([[Interface\AddOns\Yoinked\Assets\YOINKED-ICON-256s]])
 
-    newConfigFrame.TitleContainer:SetScript("OnMouseDown", function()
+    newConfigFrame.TitleContainer:SetScript("OnMouseDown", function ()
         newConfigFrame:StartMoving()
     end)
-    newConfigFrame.TitleContainer:SetScript("OnMouseUp", function()
+    newConfigFrame.TitleContainer:SetScript("OnMouseUp", function ()
         newConfigFrame:StopMovingOrSizing()
     end)
 
@@ -257,11 +258,11 @@ local function CreateBaseUIFrame()
     resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
     resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
 
-    resizeButton:SetScript("OnMouseDown", function(self, button)
+    resizeButton:SetScript("OnMouseDown", function (self, button)
         newConfigFrame:StartSizing("BOTTOMRIGHT")
     end)
 
-    resizeButton:SetScript("OnMouseUp", function(self, button)
+    resizeButton:SetScript("OnMouseUp", function (self, button)
         newConfigFrame:StopMovingOrSizing()
     end)
 
@@ -273,7 +274,7 @@ local function CreateBaseUIFrame()
     helpButton:SetTip('Help', 'Click to open help tooltips')
     helpButton:SetPoint('TOPRIGHT', -10, -40)
     helpButton:SetText('Hello')
-    helpButton:SetCall('OnClick', function()
+    helpButton:SetCall('OnClick', function ()
         helpMode = not helpMode
         tooltipFrame:SetShown(helpMode)
         tooltipFrame:SetPoint('BOTTOM', helpButton, 'TOP', 0, 30)
@@ -281,12 +282,11 @@ local function CreateBaseUIFrame()
             tooltipFrame:SetText("Help enabled. Mouse over the interface to learn more.")
         end
     end)
-
 end
 
 local function CreateRuleDisplay()
-
-    local ruleDisplayContainer = CreateFrame("Frame", "YoinkedRuleDisplayContainer", newConfigFrame, "InsetFrameTemplate3")
+    local ruleDisplayContainer = CreateFrame("Frame", "YoinkedRuleDisplayContainer", newConfigFrame,
+        "InsetFrameTemplate3")
     ruleDisplayContainer:SetPoint("TOPLEFT", newConfigFrame, "TOPLEFT", 350, -100)
     ruleDisplayContainer:SetPoint("BOTTOMRIGHT", newConfigFrame, "BOTTOMRIGHT", -20, 20)
 
@@ -306,8 +306,7 @@ local function CreateRuleDisplay()
     ruleDisplayDeleteButton:SetWidth(100)
     ruleDisplayDeleteButton:SetHeight(20)
     ruleDisplayDeleteButton:SetPoint("LEFT", ruleDisplayHeader, "RIGHT", 0, 0)
-    ruleDisplayDeleteButton:SetScript("OnClick", function(self)
-
+    ruleDisplayDeleteButton:SetScript("OnClick", function (self)
         if currentDisplayedID and currentDisplayedID > 0 then
             Yoinked:DeleteRule(currentDisplayedID)
             currentDisplayedID = 0
@@ -318,16 +317,16 @@ local function CreateRuleDisplay()
 
     ---@param context Context
     local function createDisplayContainer(context)
-
         local contextID = YOINKED_CONTEXTS[context].id
         local headerString = "Yoinked" .. YOINKED_CONTEXTS[context].displayString .. "DisplayContainer"
 
-        local containerHeight = ruleDisplayContainer:GetHeight()-6
-        local step = containerHeight/4
+        local containerHeight = ruleDisplayContainer:GetHeight() - 6
+        local step = containerHeight / 4
 
-        local ruleDisplayContextContainer = CreateFrame("Frame", headerString, ruleDisplayContainer, "YoinkedRuleDisplayTemplate")
-        ruleDisplayContextContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(contextID-1)*step - 3)
-        ruleDisplayContextContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -contextID*step - 3)
+        local ruleDisplayContextContainer = CreateFrame("Frame", headerString, ruleDisplayContainer,
+            "YoinkedRuleDisplayTemplate")
+        ruleDisplayContextContainer:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(contextID - 1) * step - 3)
+        ruleDisplayContextContainer:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -contextID * step - 3)
 
         yoinkedDisplayContainers[context] = ruleDisplayContextContainer
 
@@ -338,7 +337,8 @@ local function CreateRuleDisplay()
         ruleDisplayTitle:SetJustifyH("RIGHT")
         SetTooltip(ruleDisplayTitle, YOINKED_CONTEXTS[context].tooltipString)
 
-        local ruleDisplayDescription = Sushi.Header(ruleDisplayContextContainer, YOINKED_CONTEXTS[context].descriptionString)
+        local ruleDisplayDescription = Sushi.Header(ruleDisplayContextContainer,
+            YOINKED_CONTEXTS[context].descriptionString)
         ruleDisplayDescription:SetWidth(150)
         ruleDisplayDescription:SetUnderlined(false)
         ruleDisplayDescription:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 120, -8)
@@ -348,17 +348,18 @@ local function CreateRuleDisplay()
         ruleCapEditbox:SetWidth(120)
         ruleCapEditbox:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 143, -60)
         ruleCapEditbox:SetText("")
-        ruleCapEditbox:SetCall("OnText", function(boxEdit, text)
+        ruleCapEditbox:SetCall("OnText", function (boxEdit, text)
             local currentID = currentDisplayedID
             Yoinked:SetRuleBagCap(context, currentID, text)
         end)
-        SetTooltip(ruleCapEditbox, "This is the bag limit. Any items over this amount will be automatically sent to the bank when you open the interface.")
+        SetTooltip(ruleCapEditbox,
+            "This is the bag limit. Any items over this amount will be automatically sent to the bank when you open the interface.")
 
         local ruleAmountEditbox = Sushi.BoxEdit(ruleDisplayContextContainer)
         ruleAmountEditbox:SetWidth(120)
         ruleAmountEditbox:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 13, -60)
         ruleAmountEditbox:SetText("")
-        ruleAmountEditbox:SetCall("OnText", function(box, text)
+        ruleAmountEditbox:SetCall("OnText", function (box, text)
             local currentID = currentDisplayedID
             Yoinked:SetRuleBagAmount(context, currentID, text)
         end)
@@ -393,19 +394,19 @@ local function CreateRuleDisplay()
 
         local rulePrioritySlider = Sushi.Slider(ruleDisplayContextContainer, "Priority", 1, 1, 10, 1)
         rulePrioritySlider:SetRange(1, 10, "Low", "High")
-        rulePrioritySlider:SetCall('OnValue', function(slider, value)
+        rulePrioritySlider:SetCall('OnValue', function (slider, value)
             local currentID = currentDisplayedID
             Yoinked:SetRulePriority(context, currentID, value)
         end)
         rulePrioritySlider:SetPoint("BOTTOMRIGHT", ruleDisplayContextContainer, "BOTTOMRIGHT", -10, 20)
         rulePrioritySlider:SetWidth(140)
-        SetTooltip(rulePrioritySlider, "Rule importance. If more than one rule is enabled for an item, whichever rule has the higher priority set will be used.")
+        SetTooltip(rulePrioritySlider,
+            "Rule importance. If more than one rule is enabled for an item, whichever rule has the higher priority set will be used.")
 
         local ruleAmountEnabledCheckbox = Sushi.Check(left2, '')
         local ruleCapEnabledCheckbox = Sushi.Check(right1, '')
 
         local function updateContextState()
-
             local contextEnabled = Yoinked:GetContextEnabled(context)
             local _, _, _, ruleEnabled, amountEnabled, capEnabled = Yoinked:GetRule(context, currentDisplayedID)
 
@@ -413,7 +414,7 @@ local function CreateRuleDisplay()
 
             ruleDisplayDescription:SetNormalFontObject(interactEnabled and GameFontNormalLeft or GameFontNormalLeftGrey)
             ruleDisplayTitle:SetNormalFontObject(interactEnabled and GameFontNormalLeft or GameFontNormalLeftGrey)
-            
+
             ruleCapEditbox:SetEnabled(interactEnabled)
             ruleCapEditbox:SetShown(capEnabled)
             ruleAmountEditbox:SetEnabled(interactEnabled)
@@ -429,13 +430,12 @@ local function CreateRuleDisplay()
 
             right1.tex:SetDesaturated(not interactEnabled)
             right2.tex:SetDesaturated(not interactEnabled)
-
         end
 
         ruleAmountEnabledCheckbox:SetPoint('LEFT', left2, 'RIGHT', 10, 0)
         ruleAmountEnabledCheckbox:SetText("")
         ruleAmountEnabledCheckbox:SetWidth(20)
-        ruleAmountEnabledCheckbox:SetCall('OnClick', function(check, mouseButton, checked)
+        ruleAmountEnabledCheckbox:SetCall('OnClick', function (check, mouseButton, checked)
             local currentID = currentDisplayedID
             ruleAmountEnabledCheckbox:SetWidth(20)
             Yoinked:SetRuleAmountEnabled(context, currentID, checked)
@@ -446,7 +446,7 @@ local function CreateRuleDisplay()
         ruleCapEnabledCheckbox:SetPoint('RIGHT', right1, 'LEFT', -10, 0)
         ruleCapEnabledCheckbox:SetText("")
         ruleCapEnabledCheckbox:SetWidth(20)
-        ruleCapEnabledCheckbox:SetCall('OnClick', function(check, mouseButton, checked)
+        ruleCapEnabledCheckbox:SetCall('OnClick', function (check, mouseButton, checked)
             local currentID = currentDisplayedID
             ruleCapEnabledCheckbox:SetWidth(20)
             Yoinked:SetRuleCapEnabled(context, currentID, checked)
@@ -458,7 +458,7 @@ local function CreateRuleDisplay()
         ruleEnabledCheckbox:SetPoint('TOPRIGHT', ruleDisplayContextContainer, 'TOPRIGHT', -2, -2)
         ruleEnabledCheckbox:SetText("Enabled")
         ruleEnabledCheckbox:SetWidth(90)
-        ruleEnabledCheckbox:SetCall('OnClick', function(check, mouseButton, checked)
+        ruleEnabledCheckbox:SetCall('OnClick', function (check, mouseButton, checked)
             local currentID = currentDisplayedID
             ruleEnabledCheckbox:SetText(checked and "Enabled" or "Disabled")
             ruleEnabledCheckbox:SetWidth(90)
@@ -467,7 +467,8 @@ local function CreateRuleDisplay()
         end)
         SetTooltip(ruleEnabledCheckbox, "Enable or disable this rule pulling items from your bank.")
 
-        ruleDisplayContextContainer.SetRuleContents = function(bagAmount, bagCap, priority, enabled, bagAmountEnabled, bagCapEnabled)
+        ruleDisplayContextContainer.SetRuleContents = function (bagAmount, bagCap, priority, enabled, bagAmountEnabled,
+                                                                bagCapEnabled)
             ruleCapEditbox:SetValue(bagCap and bagCap or 0)
             ruleAmountEditbox:SetValue(bagAmount and bagAmount or 0)
             ruleEnabledCheckbox:SetValue(enabled and true or false)
@@ -484,7 +485,7 @@ local function CreateRuleDisplay()
         contextEnabledState:SetPoint('TOPLEFT', ruleDisplayContextContainer, 'TOPLEFT', 2, 0)
         contextEnabledState:SetWidth(20)
         contextEnabledState:SetChecked(Yoinked:GetContextEnabled(context))
-        contextEnabledState:SetCall('OnClick', function(check, mouseButton, checked)
+        contextEnabledState:SetCall('OnClick', function (check, mouseButton, checked)
             contextEnabledState:SetWidth(20)
             if checked ~= nil then Yoinked:SetContextEnabled(context, checked) end
             updateContextState()
@@ -492,37 +493,34 @@ local function CreateRuleDisplay()
         SetTooltip(contextEnabledState, "Set if " .. context .. " rules are enabled for " .. UnitName("player"))
 
         updateContextState()
-
     end
 
     for context in pairs(YOINKED_CONTEXTS) do
         createDisplayContainer(context)
     end
 
-    newConfigFrame:SetScript("OnSizeChanged", function(frame)
-        local containerHeight = ruleDisplayContainer:GetHeight()-6
-        local step = containerHeight/4
+    newConfigFrame:SetScript("OnSizeChanged", function (frame)
+        local containerHeight = ruleDisplayContainer:GetHeight() - 6
+        local step = containerHeight / 4
 
         for context, info in pairs(YOINKED_CONTEXTS) do
-        yoinkedDisplayContainers[context]:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3, -(info.id-1)*step - 3)
-        yoinkedDisplayContainers[context]:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3, -info.id*step - 3)
+            yoinkedDisplayContainers[context]:SetPoint("TOPLEFT", ruleDisplayContainer, "TOPLEFT", 3,
+                -(info.id - 1) * step - 3)
+            yoinkedDisplayContainers[context]:SetPoint("BOTTOMRIGHT", ruleDisplayContainer, "TOPRIGHT", -3,
+                -info.id * step - 3)
         end
     end)
 end
 
 function Yoinked:CreateUIFrame()
-
     if newConfigFrame and newConfigFrame:IsShown() then return end
     if not newConfigFrame then
-
         CreateBaseUIFrame()
 
         CreateRuleSelector()
 
         CreateRuleDisplay()
-        
     end
 
     newConfigFrame:Show()
-
 end
