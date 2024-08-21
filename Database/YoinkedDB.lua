@@ -242,6 +242,7 @@ end
 
 ---@return boolean debugEnabled
 function Yoinked:GetConfigDebugEnabled()
+    if not db then return true end
     return db.profile.debug
 end
 
