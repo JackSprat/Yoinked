@@ -49,7 +49,7 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 local bankTicker
 
----@type table
+---@type table?
 local extractionResults
 local eventFrame
 
@@ -154,10 +154,11 @@ local function getLocationStrings(locationIDs)
 end
 
 function Yoinked:DisplayExtractionResults()
+
     Yoinked:DebugPrint("BankEvent", 6, "Displaying extraction results")
-    DevTools_Dump(extractionResults)
-    if #extractionResults == 0 then
+    if not extractionResults or #extractionResults == 0 then
         print("No items extracted")
+        return
     end
     
     for itemID, result in pairs(extractionResults) do
@@ -363,6 +364,7 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
                     [containerSlotTo].itemCount + toWithdraw
                 ClearCursor()
                 
+                if not extractionResults then extractionResults = {} end
                 if extractionResults[itemID] then
                     extractionResults[itemID][1] = extractionResults[itemID][1] + toWithdraw
                     extractionResults[itemID][2][containerIDFrom] = true
