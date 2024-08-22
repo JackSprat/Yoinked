@@ -165,7 +165,7 @@ function Yoinked:DisplayExtractionResults()
         local locationsFrom = getLocationStrings(result[2])
         local locationsTo = getLocationStrings(result[3])
         item:ContinueOnItemLoad(function ()
-            print("Extracted " .. result[1] .. " of item " .. item:GetItemName() .. ", moved from " .. locationsFrom .. " to " .. locationsTo)
+            print("Extracted " .. result[1] .. " of " .. item:GetItemName() .. ", moved from " .. locationsFrom .. " to " .. locationsTo)
         end)
         
     end
