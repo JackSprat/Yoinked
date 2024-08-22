@@ -11,6 +11,7 @@ local defaults = {
         reagentbank = true,
         reagentbag = false,
         guildbank = false,
+        autoExtract = true,
         --#TODO: Implement settings to ignore banks
         backpack = true,
         bag1 = true,
@@ -321,4 +322,12 @@ end
 ---@param enabled boolean
 function Yoinked:SetConfigWarbankPreferenceEnabled(enabled)
     --TODO implement guild bank
+end
+
+function Yoinked:GetConfigAutoExtractEnabled()
+    return db.profile.autoExtract
+end
+
+function Yoinked:SetConfigAutoExtractEnabled(enabled)
+    db.profile.autoExtract = enabled
 end

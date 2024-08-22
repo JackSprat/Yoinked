@@ -49,6 +49,10 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 local bankTicker
 
+---@type table
+local extractionResults
+local eventFrame
+
 ---@type table<number, table<number, {itemID: number, itemCount: number}>>
 local containerCache = {}
 
@@ -106,23 +110,90 @@ end
 
 ---@diagnostic disable-next-line: duplicate-set-field
 function Yoinked:OnEnable()
-    self:RegisterEvent("BANKFRAME_OPENED", "OnBankFrameOpened")
-    self:RegisterEvent("BANKFRAME_CLOSED", "OnBankFrameClosed")
+    if not eventFrame then eventFrame = CreateFrame("Frame") end
+    eventFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+    eventFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
+    eventFrame:SetScript("OnEvent", function(_, event, ...)
+        if event == "PLAYER_INTERACTION_MANAGER_FRAME_SHOW" then
+            local type = ...
+            if type == 8 then
+                Yoinked:OnBankFrameOpened()
+            end
+        elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
+            local type = ...
+            if type == 8 then
+                Yoinked:OnBankFrameClosed()
+            end
+        end
+    end)
     self:RegisterEvent("CURSOR_CHANGED", "OnCursorChanged")
 end
 
 ---@diagnostic disable-next-line: duplicate-set-field
 function Yoinked:OnDisable()
-    self:UnregisterEvent("BANKFRAME_OPENED")
-    self:UnregisterEvent("BANKFRAME_CLOSED")
+    if not eventFrame then eventFrame = CreateFrame("Frame") end
+    eventFrame:UnregisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_SHOW")
+    eventFrame:UnregisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
     self:UnregisterEvent("CURSOR_CHANGED")
 end
 
-function Yoinked:OnBankFrameOpened()
+local locations = {[0] = "Backpack", [1] = "Bag 1", [2] = "Bag 2", [3] = "Bag 3", [4] = "Bag 4", [5] = "Reagent Bag", [6] = "Bank Bag 1", [7] = "Bank Bag 2", [8] = "Bank Bag 3", [9] = "Bank Bag 4", [10] = "Bank Bag 5", [11] = "Bank Bag 6", [12] = "Bank Bag 7", [13] = "Warbank Tab 1", [14] = "Warbank Tab 2", [15] = "Warbank Tab 3", [16] = "Warbank Tab 4", [17] = "Warbank Tab 5", [-1] = "Bank", [-3] = "Reagent Bank"}
+
+local function getLocationStrings(locationIDs)
+
+    local locationString = ""
+    for locationID, _ in pairs(locationIDs) do
+        if locationString == "" then 
+            locationString = locations[locationID]
+        else
+            locationString = locationString .. ", " .. locations[locationID]
+        end
+    end
+    return locationString
+
+end
+
+function Yoinked:DisplayExtractionResults()
+    Yoinked:DebugPrint("BankEvent", 6, "Displaying extraction results")
+    DevTools_Dump(extractionResults)
+    if #extractionResults == 0 then
+        print("No items extracted")
+    end
+    
+    for itemID, result in pairs(extractionResults) do
+        local item = Item:CreateFromItemID(itemID)
+        local locationsFrom = getLocationStrings(result[2])
+        local locationsTo = getLocationStrings(result[3])
+        item:ContinueOnItemLoad(function ()
+            print("Extracted " .. result[1] .. " of item " .. item:GetItemName() .. ", moved from " .. locationsFrom .. " to " .. locationsTo)
+        end)
+        
+    end
+end
+
+function Yoinked:ExtractionInteract(manuallyActivated)
+    Yoinked:DebugPrint("BankEvent", 6, "Extraction interaction. Manual? " .. tostring(manuallyActivated))
+    -- Can be called either by bank open or button click. Only run auto open if nothing else is happening, manual click determine what to do
+    local autoExtract = Yoinked:GetConfigAutoExtractEnabled()
+
+    if not autoExtract and not manuallyActivated then return end
+    if (not manuallyActivated and (bankTicker or extractionResults)) then 
+        Yoinked:DebugPrint("BankEvent", 6, "Auto extraction attempted while extraction in progress or completed")
+            return
+        end
+    if bankTicker then 
+        Yoinked:DebugPrint("BankEvent", 6, "Extraction running, manual interaction. Stopping extraction")
+        Yoinked:StopExtraction()
+        return
+    end
+    if extractionResults then
+        Yoinked:DebugPrint("BankEvent", 6, "Extraction not running, results exist. Displaying results")
+        Yoinked:DisplayExtractionResults()
+        return
+    end
     local containersBank = {}
     local containersBag = {}
     local containersSoulbound = {}
-
     --initialise enabled soulbound only containers for use as soulbound item
     if Yoinked:GetConfigBankEnabled() then
         table.insert(containersSoulbound, BANK_CONTAINER)
@@ -161,31 +232,47 @@ function Yoinked:OnBankFrameOpened()
 
     local speed = Yoinked:GetConfigSpeed()
     if not speed or type(speed) ~= "number" then speed = 1 end
-    if not bankTicker then
-        bankTicker = C_Timer.NewTicker(speed, function ()
-            self:DebugPrint("BankEvent", 6, "Running move tick")
-            if self.bankTickerRunning then bankTicker:Cancel() end
-            self.bankTickerRunning = true
-            local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound)
-            self.bankTickerRunning = false
-            if not continue then bankTicker:Cancel() end
-        end)
-    end
+    extractionResults = {}
+    Yoinked:DebugPrint("BankEvent", 6, "Starting Extraction")
+    bankTicker = C_Timer.NewTicker(speed, function ()
+        Yoinked:UpdateBankFrameState("running", speed)
+        self:DebugPrint("BankEvent", 6, "Running move tick")
+        if self.bankTickerRunning then bankTicker:Cancel() end
+        self.bankTickerRunning = true
+        local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound)
+        self.bankTickerRunning = false
+        if not continue then Yoinked:StopExtraction() end
+        Yoinked:DebugPrint("BankEvent", 6, "Move tick complete")
+    end)
+    
 end
 
-function Yoinked:OnBankFrameClosed()
+function Yoinked:StopExtraction()
+    Yoinked:DebugPrint("BankEvent", 6, "Extraction stopped")
     if bankTicker then
         bankTicker:Cancel()
         bankTicker = nil
     end
+    Yoinked:UpdateBankFrameState("finished")
+end
 
+function Yoinked:OnBankFrameOpened()
+    Yoinked:DebugPrint("BankEvent", 6, "Bank frame opened")
+    Yoinked:DisplayBankFrame()
+    Yoinked:ExtractionInteract(false)
+end
+
+function Yoinked:OnBankFrameClosed()
+    Yoinked:DebugPrint("BankEvent", 6, "Bank frame closed")
+    Yoinked:StopExtraction()
+    Yoinked:HideBankFrame()
+    extractionResults = nil
     --TODO: update database storing of cache'd bank items
 end
 
 ---@param containersBank table<number, number>
 ---@param containersBag table<number, number>
 ---@param containersSoulbound table<number, number>
----@return boolean succeeded
 function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
     for itemID, rule in pairs(Yoinked:ConstructRuleset()) do
         if rule.enabled then
@@ -275,6 +362,17 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
                 containerCache[containerIDTo][containerSlotTo].itemCount = containerCache[containerIDTo]
                     [containerSlotTo].itemCount + toWithdraw
                 ClearCursor()
+                
+                if extractionResults[itemID] then
+                    extractionResults[itemID][1] = extractionResults[itemID][1] + toWithdraw
+                    extractionResults[itemID][2][containerIDFrom] = true
+                    extractionResults[itemID][3][containerIDTo] = true
+                else
+                    ---@type table<number, boolean>
+                    local containerIDFromTable = {[containerIDFrom] = true}
+                    local containerIDToTable = {[containerIDTo] = true}
+                    extractionResults[itemID] = {toWithdraw, containerIDFromTable, containerIDToTable}
+                end
                 return "succeeded"
             end
         end
@@ -400,6 +498,14 @@ function Yoinked:GetOptions()
                 bigStep = 0.05,
                 set = function (info, val) Yoinked:SetConfigSpeed(val) end,
                 get = function (info) return Yoinked:GetConfigSpeed() end
+            },
+            autoExtractEnable = {
+                name = "Auto Extract",
+                desc = "Automatically extract items when you open your bank",
+                type = "toggle",
+                width = "full",
+                set = function (info, val) Yoinked:SetConfigAutoExtractEnabled(val) end,
+                get = function (info) return Yoinked:GetConfigAutoExtractEnabled() end
             },
         },
     }

@@ -11,6 +11,7 @@ local yoinkedDisplayContainers = {}
 
 local tooltipFrame
 local helpMode = false
+local yoinkedBankFrame, yoinkedBankFrameCD, yoinkedBankFrameRightHeader
 
 
 ---@param frameInput {}|Frame
@@ -177,6 +178,7 @@ local function CreateRuleSelector()
     ruleSelectorAddBox:SetPoint("TOPLEFT", ruleSelectorContainer, "TOPLEFT", 0, -3)
     ruleSelectorAddBox:SetSize(300, 45)
     ruleSelectorAddBox.ItemIcon:SetTexture(135769)
+    ruleSelectorAddBox.ItemIcon:ClearAllPoints()
     ruleSelectorAddBox.ItemIcon:SetPoint("CENTER", ruleSelectorAddBox, "CENTER", 0, 0)
     ruleSelectorAddBox:SetScript("OnMouseUp", function ()
         if CursorHasItem() then
@@ -524,4 +526,65 @@ function Yoinked:CreateUIFrame()
     end
 
     newConfigFrame:Show()
+end
+
+---@param state "pending"|"running"|"finished"
+---@param speed number?
+function Yoinked:UpdateBankFrameState(state, speed)
+    if state == "pending" then
+        if yoinkedBankFrame.ItemIcon and yoinkedBankFrameRightHeader then
+            local autoExtract = Yoinked:GetConfigAutoExtractEnabled()
+            local message = "Click to start processing"
+            if autoExtract then message = "Will automatically process" end
+            yoinkedBankFrameRightHeader:SetText(message)
+            yoinkedBankFrame.ItemIcon:SetTexture(132950)
+        end
+    elseif state == "running" then
+        if yoinkedBankFrame.ItemIcon and yoinkedBankFrameCD and yoinkedBankFrameRightHeader then
+            yoinkedBankFrameRightHeader:SetText("Running every " .. tostring(speed) .. "s, click to stop")
+            yoinkedBankFrameCD:SetCooldown(GetTime(), speed)
+            yoinkedBankFrame.ItemIcon:SetTexture(538536)
+        end
+    elseif state == "finished" then
+        if yoinkedBankFrame.ItemIcon and yoinkedBankFrameRightHeader then
+            yoinkedBankFrameRightHeader:SetText("Click to print results to chat")
+            yoinkedBankFrame.ItemIcon:SetTexture(134331)
+        end
+    end
+end
+function Yoinked:DisplayBankFrame()
+
+    if not yoinkedBankFrame then
+        Yoinked:DebugPrint("UI", 6, "Creating bank frame")
+        yoinkedBankFrame = CreateFrame("Button", "YoinkedBankFrame", UIParent, "YoinkedRuleContainerButtonTemplate")
+        yoinkedBankFrame:SetPoint("BOTTOM", BankFrame, "TOP")
+        yoinkedBankFrame:SetSize(300, 45)
+        yoinkedBankFrame:SetScript("OnMouseUp", function ()
+            Yoinked:ExtractionInteract(true)
+        end)
+
+        yoinkedBankFrameRightHeader = yoinkedBankFrame:CreateFontString("yoinkedBankFrameRightHeader", "OVERLAY", "GameFontNormal")
+        yoinkedBankFrameRightHeader:SetPoint("LEFT", yoinkedBankFrame.ItemIcon, "RIGHT", 10, 0)
+        yoinkedBankFrameRightHeader:SetJustifyH("LEFT")
+        
+        
+        local yoinkedBankFrameCDContainer = CreateFrame("Frame", "YoinkedBankFrameCDContainer")
+        yoinkedBankFrameCD = CreateFrame("Cooldown", "YoinkedBankFrameCD", yoinkedBankFrameCDContainer,  "CooldownFrameTemplate")
+        yoinkedBankFrameCDContainer:SetPoint("CENTER", yoinkedBankFrame.ItemIcon, "CENTER", 0, 0)
+        yoinkedBankFrameCDContainer:SetSize(23, 23)
+        yoinkedBankFrameCD:SetAllPoints(yoinkedBankFrameCDContainer)
+        yoinkedBankFrameCD:SetSwipeColor(1, 1, 1)
+    end
+
+    Yoinked:UpdateBankFrameState("pending")
+    Yoinked:DebugPrint("UI", 6, "Displaying bank frame")
+    yoinkedBankFrame:Show()
+
+end
+
+function Yoinked:HideBankFrame()
+    Yoinked:DebugPrint("UI", 6, "Hiding bank frame")
+    if yoinkedBankFrame then
+        yoinkedBankFrame:Hide()
+    end
 end
