@@ -211,7 +211,7 @@ function Yoinked:ConstructRuleset()
         for context in pairs(YOINKED_CONTEXTS) do
             if self:GetContextEnabled(context) then
                 for itemID, rule in pairs(db[context].rules) do
-                    if not db.global.deletedItems[itemID] then
+                    if not db.global.deletedItems[itemID] and rule.enabled then
                         if assembledRules[itemID] then
                             if rule.priority >= assembledRules[itemID].priority then assembledRules[itemID] = rule end
                         else
