@@ -26,12 +26,12 @@ local defaults = {
         configWidth = 0,
         configHeight = 0,
         rules = {
-            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false }
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false }
         }
     },
     global = {
         rules = {
-            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false },
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false },
             [207023] = { bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false },
             [191383] = { bagAmount = 20, bagCap = 20, priority = 10, enabled = false, amountEnabled = false, capEnabled = false }
         },
@@ -50,13 +50,13 @@ local defaults = {
         globalEnabled = true,
         profileEnabled = true,
         rules = {
-            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false }
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false }
         }
         --#TODO: Implement character bank saved data structure
     },
     class = {
         rules = {
-            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = true, amountEnabled = true, capEnabled = false }
+            ['**'] = { bagAmount = 0, bagCap = 0, priority = 1, enabled = false, amountEnabled = false, capEnabled = false }
         }
     }
 }
