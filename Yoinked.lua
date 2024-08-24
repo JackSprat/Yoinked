@@ -195,6 +195,7 @@ function Yoinked:ExtractionInteract(manuallyActivated)
     local containersBank = {}
     local containersBag = {}
     local containersSoulbound = {}
+    local containersAllBags = {}
     --initialise enabled soulbound only containers for use as soulbound item
     if Yoinked:GetConfigBankEnabled() then
         table.insert(containersSoulbound, BANK_CONTAINER)
@@ -226,10 +227,13 @@ function Yoinked:ExtractionInteract(manuallyActivated)
     for i = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         self:DebugPrint("BankEvent", 10, "Adding bag container " .. i)
         table.insert(containersBag, i)
+        table.insert(containersAllBags, i)
     end
 
+    table.insert(containersAllBags, BACKPACK_CONTAINER+NUM_BAG_SLOTS+1)
+
     self:UpdateCacheItems(containersBank)
-    self:UpdateCacheItems(containersBag)
+    self:UpdateCacheItems(containersAllBags)
 
     local speed = Yoinked:GetConfigSpeed()
     if not speed or type(speed) ~= "number" then speed = 1 end
@@ -240,7 +244,7 @@ function Yoinked:ExtractionInteract(manuallyActivated)
         self:DebugPrint("BankEvent", 6, "Running move tick")
         if self.bankTickerRunning then bankTicker:Cancel() end
         self.bankTickerRunning = true
-        local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound)
+        local continue = self:ExtractItems(containersBank, containersBag, containersSoulbound, containersAllBags)
         self.bankTickerRunning = false
         if not continue then Yoinked:StopExtraction() end
         Yoinked:DebugPrint("BankEvent", 6, "Move tick complete")
@@ -274,18 +278,20 @@ end
 ---@param containersBank table<number, number>
 ---@param containersBag table<number, number>
 ---@param containersSoulbound table<number, number>
-function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound)
+function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound, containersAllBags)
+    self:DebugPrint("BankEvent", 6, "Extracting items")
     for itemID, rule in pairs(Yoinked:ConstructRuleset()) do
         if rule.enabled then
-            self:DebugPrint("BankEvent", 10, "Checking " .. itemID .. ": " .. rule.bagAmount)
+            self:DebugPrint("BankEvent", 6, "Checking " .. itemID .. ": " .. (rule.amountEnabled and ">" or "x") ..rule.bagAmount .. "=" .. rule.bagCap .. (rule.capEnabled and "<" or "x"))
 
             local bagCount = C_Item.GetItemCount(itemID, false, false, false, false) ---@diagnostic disable-line: redundant-parameter
 
             if bagCount < rule.bagAmount and rule.amountEnabled then
+                self:DebugPrint("BankEvent", 6, "Bag amount rule confirmed (" .. bagCount .. ") < " .. rule.bagAmount)
                 local needed = rule.bagAmount - bagCount
                 local bagAndBankCount = C_Item.GetItemCount(itemID, Yoinked:GetConfigBankEnabled(), false,
                     Yoinked:GetConfigReagentBankEnabled(), Yoinked:GetConfigWarbankEnabled()) ---@diagnostic disable-line: redundant-parameter
-                self:DebugPrint("BankEvent", 10,
+                self:DebugPrint("BankEvent", 6,
                     "Verify Bag Count (" ..
                     bagCount ..
                     ") < Bag + Bank Count (" .. bagAndBankCount .. "): " .. tostring(bagAndBankCount > bagCount))
@@ -295,10 +301,11 @@ function Yoinked:ExtractItems(containersBank, containersBag, containersSoulbound
                     if (success == "nospace") then return false end
                 end
             elseif bagCount > rule.bagCap and rule.capEnabled then
+                self:DebugPrint("BankEvent", 6, "Bag cap rule confirmed (" .. bagCount .. ") > " .. rule.bagCap)
                 local overflow = bagCount - rule.bagCap
 
                 if overflow > 0 then
-                    local success = self:TryMoveContainers(itemID, overflow, containersBag, containersBank,
+                    local success = self:TryMoveContainers(itemID, overflow, containersAllBags, containersBank,
                         containersSoulbound)
                     if (success == "succeeded") then return true end
                     if (success == "nospace") then return false end
@@ -324,17 +331,20 @@ function Yoinked:TryMoveContainers(itemID, requestedAmount, containerIDsFrom, co
             local fromItemID = C_Container.GetContainerItemID(containerIDFrom, containerSlotFrom)
             if (fromItemID) then
                 self:DebugPrint("BankEvent", 8,
-                    "Checking slot " .. containerSlotFrom .. " vs " .. fromItemID)
+                    "Checking bagslot " .. containerIDFrom .. "-" ..containerSlotFrom .. " vs " .. fromItemID  .. " for item" .. itemID)
             end
             if fromItemID == itemID then
                 local foundAmount = C_Container.GetContainerItemInfo(containerIDFrom, containerSlotFrom)["stackCount"]
                 local isSoulbound = C_Item.IsBound(ItemLocation:CreateFromBagAndSlot(containerIDFrom, containerSlotFrom))
+                if isSoulbound then
+                    self:DebugPrint("BankEvent", 8, "Item " .. itemID .. " is soulbound")
+                end
                 local containerIDsToFiltered = (containerIDsToSoulbound and isSoulbound) and containerIDsToSoulbound or
                     containerIDsTo
 
                 local containerIDTo, containerSlotTo, containerSlotToCapacity = self:FindEmptyOrUnfilledSlot(itemID,
                     containerIDsToFiltered)
-                self:DebugPrint("BankEvent", 6, "Found empty slot at " .. containerIDTo .. ", " .. containerSlotTo)
+                self:DebugPrint("BankEvent", 6, "Found empty slot at " .. containerIDTo .. ", " .. containerSlotTo .. " for item" .. itemID )
                 if not containerIDTo or not containerSlotTo or not containerSlotToCapacity then
                     return "nospace"
                 end
